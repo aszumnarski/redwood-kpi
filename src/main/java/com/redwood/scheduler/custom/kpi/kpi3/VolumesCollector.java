@@ -16,6 +16,11 @@ import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
+import static com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec.parseFileName;
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
+
 public class VolumesCollector
 {
     private final SchedulerSession session;
@@ -59,7 +64,7 @@ public class VolumesCollector
     public JobFile collect()
             throws Exception
     {
-        String files = Util.getParameter(job,"IN_FILES");
+        String files = getParameter(job,"IN_FILES");
         if(files.length() < 10) return null;
         Map<FileKey,List<String>> filesMap = new HashMap<>();
 
@@ -76,15 +81,15 @@ public class VolumesCollector
         Map<FileKey,Row> rows = collectRows(filesMap);
         if (rows.isEmpty()) return null;
 
-        String fileName = Util.getParameter(job,"IN_FILENAME");
-        JobFile jf = Util.createJobFile(session, job, fileName);
+        String fileName = getParameter(job,"IN_FILENAME");
+        JobFile jf = createJobFile(session, job, fileName);
         try (FileOutputStream fos = new FileOutputStream(jf.getFileName()))
         {
-            Util.write(fos,getHeader());
+            write(fos,getHeader());
             for(FileKey key:rows.keySet())
             {
                 Row row = rows.get(key);
-                Util.write(fos, row.toCsv());
+                write(fos, row.toCsv());
             }
         }
         return jf;
@@ -168,15 +173,16 @@ public class VolumesCollector
             throws Exception
     {
         String fileName = "missing_chains.csv";
-        JobFile jf = Util.createJobFile(session, job, fileName);
+        JobFile jf = createJobFile(session, job, fileName);
         try (FileOutputStream fos = new FileOutputStream(jf.getFileName()))
         {
             for(String chain:missingChains)
             {
-                Util.write(fos, chain);
+                write(fos, chain);
             }
         }
     }
+    public static final String ENCODING = "UTF-8";
 
     private Set<String> getUniqueLines(List<String> paths)
             throws Exception
@@ -186,7 +192,7 @@ public class VolumesCollector
         {
             String[] parts = path.split(":", -1);
             JobFile jf = session.getJobByJobId(Long.parseLong(parts[1])).getJobFileByName(parts[2]);
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(jf.getInputStream(), Util.ENCODING)))
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(jf.getInputStream(), ENCODING)))
             {
                 String line;
                 while ((line = br.readLine()) != null)
@@ -235,13 +241,13 @@ public class VolumesCollector
     FileKey getKey(String name)
             throws Exception
     {
-        String periods = Util.getParameter(job,"IN_PERIODS");
+        String periods = getParameter(job,"IN_PERIODS");
         int periodInt = Integer.parseInt(periods);
         int idx = name.indexOf("_");
         if(idx == -1) throw new Exception("Illegal name!");
         if(periodInt == 1) idx = -1;
         String nameNoIndex = name.substring(idx + 1);
         if("missing_chains.csv".equals(nameNoIndex)) return new FileKey("missing", "missing", "missing", "missing", "missing");
-        return Util.parseFileName(nameNoIndex);
+        return parseFileName(nameNoIndex);
     }
 }

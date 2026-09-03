@@ -15,6 +15,10 @@ import java.util.ArrayList;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
+import static com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec.getFileName;
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
+
 class DataTransformer
 {
     private DateTimeZone runStartDate;
@@ -182,13 +186,13 @@ class DataTransformer
         if(!jobStatus.equals("Completed")) return;
         if(j.getJobParameterByName(parameter) == null) return;
         if(j.getJobParameterByName(parameter).getOutValueTableParameter() == null) return;
-        String fileName = Util.getFileName(new FileKey(parentDate,companyCode,accountGroup,type,name));
+        String fileName = getFileName(new FileKey(parentDate,companyCode,accountGroup,type,name));
         boolean append = true;
         JobFile jf = job.getJobFileByName(fileName);
         if(jf == null)
         {
             p.println("file missing: " + fileName);
-            jf = Util.createJobFile(session,job, fileName);
+            jf = createJobFile(session,job, fileName);
             append = false;
         }
         try(FileOutputStream out = new FileOutputStream(jf.getFileName(),append))
@@ -202,7 +206,7 @@ class DataTransformer
                     String gjahr = r.getString("GJAHR");
                     String rldnr = (r.getMetadata().hasColumn("RLDNR")) ? r.getString("RLDNR") : "";
                     String doc = belnr + buzei + gjahr + rldnr;
-                    Util.write(out,doc);
+                    write(out,doc);
                 }
             }
         }
@@ -214,13 +218,13 @@ class DataTransformer
         if(!jobStatus.equals("Completed")) return;
         if(j.getJobParameterByName(parameter) == null) return;
         if(j.getJobParameterByName(parameter).getOutValueTableParameter() == null) return;
-        String fileName = Util.getFileName(new FileKey(parentDate,companyCode,accountGroup,type,name));
+        String fileName = getFileName(new FileKey(parentDate,companyCode,accountGroup,type,name));
         boolean append = true;
         JobFile jf = job.getJobFileByName(fileName);
         if(jf == null)
         {
             p.println("file missing: " + fileName);
-            jf = Util.createJobFile(session,job, fileName);
+            jf = createJobFile(session,job, fileName);
             append = false;
         }
         try(FileOutputStream out = new FileOutputStream(jf.getFileName(),append))
@@ -235,7 +239,7 @@ class DataTransformer
                     String rldnr = (r.getMetadata().hasColumn("RLDNR")) ? r.getString("RLDNR") : "";
                     String autoComment = (r.getMetadata().hasColumn("Auto_comment")) ? r.getCanonicalStringValue("Auto_comment") : "";
                     String doc = belnr + buzei + gjahr + rldnr;
-                    if(autoComment.equals("Proposed for Clearing")) Util.write(out,doc);
+                    if(autoComment.equals("Proposed for Clearing")) write(out,doc);
                 }
             }
         }

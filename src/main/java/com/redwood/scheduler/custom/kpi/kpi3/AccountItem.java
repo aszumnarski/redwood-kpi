@@ -10,6 +10,8 @@ import java.util.HashSet;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
+
 class AccountItem
 {
     private DateTimeZone runStartDate;
@@ -37,7 +39,7 @@ class AccountItem
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
         name = j.getJobDefinition().getName();
-        accountGroup = Util.getAccountGroups(j);
+        accountGroup = getAccountGroups(j);
     }
     public AccountItem(AccountItemGL aigl)
     {

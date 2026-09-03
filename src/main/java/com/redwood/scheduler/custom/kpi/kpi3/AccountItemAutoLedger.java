@@ -15,6 +15,9 @@ import java.util.Map;
 import java.util.HashMap;
 import java.io.PrintWriter;
 
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
+
 class AccountItemAutoLedger
 {
     private DateTimeZone runStartDate;
@@ -50,8 +53,8 @@ class AccountItemAutoLedger
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
         name = j.getJobDefinition().getName();
-        accountGroup = Util.getAccountGroups(j);
-        companyCode = Util.getParameter(j,"BUKRS");
+        accountGroup = getAccountGroups(j);
+        companyCode = getParameter(j,"BUKRS");
     }
 
     private void addLedger(Ledger l,PrintWriter p)

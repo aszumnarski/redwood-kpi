@@ -6,6 +6,8 @@ import com.redwood.scheduler.api.model.Job;
 import java.io.PrintWriter;
 import java.util.Iterator;
 
+import static com.redwood.scheduler.custom.kpi.kpi3.query.JobQueryBuilder.getQuery;
+
 public class Extractor
 {
 
@@ -27,7 +29,7 @@ public class Extractor
     public void execute()
             throws Exception
     {
-        String query = Util.getQuery(session,job);
+        String query = getQuery(session,job);
         out.println(query);
         Iterator<Job> it = session.executeObjectQuery(query, null);
         collector.collectAll(it,out);

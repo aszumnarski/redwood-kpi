@@ -9,6 +9,9 @@ import java.util.Set;
 import java.util.HashSet;
 import java.io.PrintWriter;
 
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
+
 class GL
 {
     private DateTimeZone runStartDate;
@@ -37,9 +40,9 @@ class GL
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
         name = j.getJobDefinition().getName();
-        accountGroup = Util.getAccountGroups(j);
-        companyCode = Util.getParameter(j,"BUKRS");
-        gl = Util.getParameter(j,"SAKNR");
+        accountGroup = getAccountGroups(j);
+        companyCode = getParameter(j,"BUKRS");
+        gl = getParameter(j,"SAKNR");
     }
     private void addDt(DataTransformer dt)
     {

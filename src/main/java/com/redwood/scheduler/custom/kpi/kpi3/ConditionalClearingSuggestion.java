@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.io.PrintWriter;
 
-class ConditionalClearingSuggestion
+public class ConditionalClearingSuggestion
 {
     private int totalOpenItems = 0;
     private int autoClear = 0;

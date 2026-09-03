@@ -17,7 +17,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
-class ConditionalClearingRequest
+import static com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec.getFileName;
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
+
+public class ConditionalClearingRequest
 {
     private DateTimeZone runStartDate;
     private DateTimeZone runEndDate;
@@ -48,8 +54,8 @@ class ConditionalClearingRequest
         status = j.getStatus().getTranslationEN();
         name = j.getJobDefinition().getName();
         suggestionId = getLink(j);
-        accountGroups = Util.getAccountGroups(j);
-        companyCode = Util.getParameter(j,"BUKRS");
+        accountGroups = getAccountGroups(j);
+        companyCode = getParameter(j,"BUKRS");
     }
     public void collectChildren(SchedulerSession session,PrintWriter p, Job job)
             throws Exception
@@ -74,7 +80,7 @@ class ConditionalClearingRequest
                         throw new Exception("Excel file 2x in chain " + child.getJobId());
                     }
                     String excelStatus = child.getStatus().getTranslationEN();
-                    String outLines = Util.getParameter(child,"OUT_LINES");
+                    String outLines = getParameter(child,"OUT_LINES");
                     if(excelStatus.equals("Completed"))
                     {
                         totalOpenItems = Integer.parseInt(outLines);
@@ -91,7 +97,7 @@ class ConditionalClearingRequest
                         p.println("Prep dt file 2x in chain " + child.getJobId());
                     }
                     String selectedStatus = child.getStatus().getTranslationEN();
-                    String prepClearing = Util.getParameter(child,"PrepClearingRowCount");
+                    String prepClearing = getParameter(child,"PrepClearingRowCount");
                     if(selectedStatus.equals("Completed"))
                     {
                         selectedForClear = Integer.parseInt(prepClearing);
@@ -108,8 +114,8 @@ class ConditionalClearingRequest
                         p.println("Clear 2x in chain " + child.getJobId());
                     }
                     String status = child.getStatus().getTranslationEN();
-                    String okLines = Util.getParameter(child,"OUT_DATA_OK_RTX");
-                    String errorLines = Util.getParameter(child,"OUT_DATA_ERROR_RTX");
+                    String okLines = getParameter(child,"OUT_DATA_OK_RTX");
+                    String errorLines = getParameter(child,"OUT_DATA_ERROR_RTX");
                     Map<String,List<String>> matchings = getMatchingRtx(child);
                     if(errorLines == null)
                     {
@@ -138,12 +144,12 @@ class ConditionalClearingRequest
             throws Exception
     {
         p.println(itemsMap);
-        String fileName = Util.getFileName(new FileKey(runStartDate,companyCode,accountGroups,"conditional",type));
+        String fileName = getFileName(new FileKey(runStartDate,companyCode,accountGroups,"conditional",type));
         boolean append = true;
         JobFile jf = job.getJobFileByName(fileName);
         if (jf == null)
         {
-            jf = Util.createJobFile(session,job, fileName);
+            jf = createJobFile(session,job, fileName);
             append = false;
         }
         try (FileOutputStream out = new FileOutputStream(jf.getFileName(), append))
@@ -162,7 +168,7 @@ class ConditionalClearingRequest
                 }
                 for (String item : itemsMap.get(key))
                 {
-                    Util.write(out, item);
+                    write(out, item);
                 }
             }
         }
@@ -240,12 +246,12 @@ class ConditionalClearingRequest
         if(j.getJobParameterByName(parameter).getOutValueTableParameter() == null) return;
         try(RTXReader reader = j.getJobParameterByName(parameter).getOutValueTableParameter().getRTXReader() )
         {
-            String fileName = Util.getFileName(new FileKey(runStartDate,companyCode,accountGroups,"conditional",name));
+            String fileName = getFileName(new FileKey(runStartDate,companyCode,accountGroups,"conditional",name));
             boolean append = true;
             JobFile jf = job.getJobFileByName(fileName);
             if(jf == null)
             {
-                jf = Util.createJobFile(session,job, fileName);
+                jf = createJobFile(session,job, fileName);
                 append = false;
             }
             try(FileOutputStream out = new FileOutputStream(jf.getFileName(),append))
@@ -256,7 +262,7 @@ class ConditionalClearingRequest
                     String buzei = r.getString("Doc.Item");
                     String gjahr = r.getString("FiscalYear");
                     String doc = belnr + buzei + gjahr;
-                    Util.write(out,doc);
+                    write(out,doc);
                 }
             }
         }
@@ -297,7 +303,7 @@ class ConditionalClearingRequest
     private Long getLink(Job j)
     {
         Long answer = -1l;
-        String inExcel = Util.getParameter(j,"IN_FILE_FROM_EP");
+        String inExcel = getParameter(j,"IN_FILE_FROM_EP");
         String[] parts = inExcel.split("_",-1);
         for(String part:parts)
         {

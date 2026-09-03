@@ -16,6 +16,12 @@ import java.util.HashMap;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
+import static com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec.getFileName;
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
+
 class AccountItemAuto
 {
     private DateTimeZone runStartDate;
@@ -52,8 +58,8 @@ class AccountItemAuto
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
         name = j.getJobDefinition().getName();
-        accountGroup = Util.getAccountGroups(j);
-        companyCode = Util.getParameter(j,"BUKRS");
+        accountGroup = getAccountGroups(j);
+        companyCode = getParameter(j,"BUKRS");
     }
 
     public AccountItemAuto(AccountItemAutoOld aio)
@@ -181,8 +187,8 @@ class AccountItemAuto
                 }
                 Map<String,List<String>> matchings = getMatchingRtx(child);
                 String status = child.getStatus().getTranslationEN();
-                String okLines = Util.getParameter(child,"OUT_DATA_OK_RTX");
-                String errorLines = Util.getParameter(child,"OUT_DATA_ERROR_RTX");
+                String okLines = getParameter(child,"OUT_DATA_OK_RTX");
+                String errorLines = getParameter(child,"OUT_DATA_ERROR_RTX");
                 if(errorLines == null)
                 {
                     itemsCleared = totalCollected; //all records cleared w/o errors
@@ -205,12 +211,12 @@ class AccountItemAuto
     private void writeItemsToFile(SchedulerSession session,String type, Map<String, List<String>> itemsMap, Job job)
             throws Exception
     {
-        String fileName = Util.getFileName(new FileKey(parentDate,companyCode,accountGroup,"auto",type));
+        String fileName = getFileName(new FileKey(parentDate,companyCode,accountGroup,"auto",type));
         boolean append = true;
         JobFile jf = job.getJobFileByName(fileName);
         if (jf == null)
         {
-            jf = Util.createJobFile(session,job, fileName);
+            jf = createJobFile(session,job, fileName);
             append = false;
         }
         try (FileOutputStream out = new FileOutputStream(jf.getFileName(), append))
@@ -228,7 +234,7 @@ class AccountItemAuto
                 }
                 for (String item : itemsMap.get(key))
                 {
-                    Util.write(out, item);
+                    write(out, item);
                 }
             }
         }

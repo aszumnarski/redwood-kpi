@@ -2,7 +2,9 @@ package com.redwood.scheduler.custom.kpi.kpi3;
 import com.redwood.scheduler.api.date.DateTimeZone;
 import java.util.Objects;
 
-class FileKey
+import static com.redwood.scheduler.custom.kpi.kpi3.date.PeriodUtil.getPeriod;
+
+public class FileKey
 {
     public String period;
     public String companyCode;
@@ -21,7 +23,7 @@ class FileKey
 
     public FileKey(DateTimeZone period,String companyCode,String accountGroup,String type,String name)
     {
-        this.period = Util.getPeriod(period);
+        this.period = getPeriod(period);
         this.companyCode = companyCode;
         this.accountGroup = accountGroup;
         this.type = type;

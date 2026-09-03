@@ -17,6 +17,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
+import static com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec.getFileName;
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
+
 class AccountItemSuggested
 {
     private DateTimeZone runStartDate;
@@ -53,8 +59,8 @@ class AccountItemSuggested
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
         name = j.getJobDefinition().getName();
-        accountGroup = Util.getAccountGroups(j);
-        companyCode = Util.getParameter(j,"BUKRS");
+        accountGroup = getAccountGroups(j);
+        companyCode = getParameter(j,"BUKRS");
     }
 
     private void addDt(DataTransformer dt)
@@ -139,22 +145,22 @@ class AccountItemSuggested
       */
             if(baseParents.contains(p) && c.contains("Certification_Process_Account"))
             {
-                String certId = Util.getParameter(child,"CERT_UNIQUE_ID");
+                String certId = getParameter(child,"CERT_UNIQUE_ID");
                 if(certId != null)
                 {
-                    pw.println("Cert ID: " + Util.getParameter(child,"CERT_UNIQUE_ID"));
-                    String fileName = Util.getFileName(new FileKey(parentDate,companyCode,accountGroup,"suggested","certId"));//errors / cleared
+                    pw.println("Cert ID: " + getParameter(child,"CERT_UNIQUE_ID"));
+                    String fileName = getFileName(new FileKey(parentDate,companyCode,accountGroup,"suggested","certId"));//errors / cleared
                     boolean append = true;
                     JobFile jf = job.getJobFileByName(fileName);
                     if(jf == null)
                     {
                         pw.println("file missing: " + fileName);
-                        jf = Util.createJobFile(session,job, fileName);
+                        jf = createJobFile(session,job, fileName);
                         append = false;
                     }
                     try(FileOutputStream out = new FileOutputStream(jf.getFileName(),append))
                     {
-                        Util.write(out,certId);
+                        write(out,certId);
                     }
 
                 }

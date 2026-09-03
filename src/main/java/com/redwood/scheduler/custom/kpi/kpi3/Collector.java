@@ -1,15 +1,16 @@
 package com.redwood.scheduler.custom.kpi.kpi3;
-import com.redwood.scheduler.custom.kpi.kpi3.Util.JobDefinitionRegistry;
-import com.redwood.scheduler.custom.kpi.kpi3.Util.JobType;
 import com.redwood.scheduler.api.model.Job;
+import com.redwood.scheduler.custom.kpi.kpi3.config.JobDefinitionRegistry;
+import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
 
-import java.util.Map;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.ArrayList;
 import java.io.PrintWriter;
 import java.util.Iterator;
+
+import static com.redwood.scheduler.custom.kpi.kpi3.date.PeriodUtil.getPeriod;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
 public class Collector
 {
@@ -31,9 +32,9 @@ public class Collector
         JobDefinitionRegistry def = JobDefinitionRegistry.fromName(j.getJobDefinition().getName());
         JobType type = def != null ? def.type : JobType.UNKNOWN;
 
-        String period = Util.getPeriod(j.getRunStart());
-        String bukrs = Util.getParameter(j,"BUKRS");
-        String accountGroup = Util.getAccountGroups(j);
+        String period = getPeriod(j.getRunStart());
+        String bukrs = getParameter(j,"BUKRS");
+        String accountGroup = getAccountGroups(j);
         workItems.add(new WorkItem(period,type,bukrs,accountGroup,j));
     }
 

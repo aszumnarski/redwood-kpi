@@ -1,6 +1,6 @@
 package com.redwood.scheduler.custom.kpi.kpi3;
 
-import com.redwood.scheduler.custom.kpi.kpi3.Util.JobDefinitionRegistry;
+import com.redwood.scheduler.custom.kpi.kpi3.config.JobDefinitionRegistry;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.JobFile;
@@ -9,6 +9,9 @@ import com.redwood.scheduler.api.date.DateTimeZone;
 import java.io.PrintWriter;
 import java.util.Collection;
 import java.io.FileOutputStream;
+
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
+import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
 
 public class Processor
 {
@@ -32,11 +35,12 @@ public class Processor
     private void processWorkItem(WorkItem item, SchedulerSession session, Job parentJob,PrintWriter p)
             throws Exception
     {
-        JobDefinitionRegistry definition = JobDefinitionRegistry.fromName(item.getJob().getJobDefinition().getName());
+        String definitionName = item.getJob().getJobDefinition().getName();
+        JobDefinitionRegistry definition = JobDefinitionRegistry.fromName(definitionName);
 
         if (definition == null)
         {
-            writeMissingChain(definition.name, session, parentJob);
+            writeMissingChain(definitionName, session, parentJob);
             return;
         }
 
@@ -55,12 +59,12 @@ public class Processor
         JobFile jf = parentJob.getJobFileByName(fileName);
         if (jf == null)
         {
-            jf = Util.createJobFile(session,parentJob,fileName);
+            jf = createJobFile(session,parentJob,fileName);
             append = false;
         }
         try (FileOutputStream out = new FileOutputStream(jf.getFileName(), append))
         {
-            Util.write(out, i);
+            write(out, i);
         }
     }
 }

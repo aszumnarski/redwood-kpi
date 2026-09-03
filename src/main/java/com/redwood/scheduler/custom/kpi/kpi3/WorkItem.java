@@ -1,6 +1,6 @@
 package com.redwood.scheduler.custom.kpi.kpi3;
-import com.redwood.scheduler.custom.kpi.kpi3.Util.JobType;
 import com.redwood.scheduler.api.model.Job;
+import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
 
 public final class WorkItem
 {

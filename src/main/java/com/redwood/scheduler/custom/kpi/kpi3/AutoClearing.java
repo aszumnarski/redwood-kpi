@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.ArrayList;
 import java.io.PrintWriter;
 
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
+
 public class AutoClearing
 {
     private DateTimeZone runStartDate;
@@ -34,8 +37,8 @@ public class AutoClearing
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
         name = j.getJobDefinition().getName();
-        accountGroups = Util.getAccountGroups(j);
-        companyCode = Util.getParameter(j,"BUKRS");
+        accountGroups = getAccountGroups(j);
+        companyCode = getParameter(j,"BUKRS");
     }
 
     public void collectActionItems(SchedulerSession session,PrintWriter p, Job job)
