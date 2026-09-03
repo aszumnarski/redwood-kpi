@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.redwood.scheduler.custom.kpi'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs "C:/Users/z004y4es/IdeaProjects/2025.2.0.6-2026-03-06-1610_gd3daddfbcbb"
+    }
+}
+
+dependencies {
+
+
+    compileOnly 'com.fasterxml.jackson.core:jackson-core:2.21.1'
+    compileOnly "com.fasterxml.jackson.core:jackson-annotations:2.18.3"
+    compileOnly "com.fasterxml.jackson.core:jackson-databind:2.18.3"
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    implementation name: 'api-public'
+    implementation name: 'api-signed'
+    implementation name: 'api-tool-lib'
+    implementation name: 'configuration-api'
+    implementation name: 'configuration-signed'
+    implementation name: 'infrastructure-public'
+    implementation name: 'infrastructure-signed'
+    implementation name: 'rfcapi-cm-public'
+    implementation name: 'rfcapi-public'
+
+    // Optional: if `valet` contains jars
+    implementation fileTree(dir: "C:/Users/z004y4es/IdeaProjects/2025.2.0.6-2026-03-06-1610_gd3daddfbcbb/valet", include: ["*.jar"])
+}
+
+test {
+    useJUnitPlatform()
+}
