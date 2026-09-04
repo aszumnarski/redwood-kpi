@@ -6,6 +6,7 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.rtx.RTXReader;
 import com.redwood.scheduler.api.rtx.RTXRow;
+import com.redwood.scheduler.custom.kpi.kpi3.service.RTXService;
 
 import java.util.List;
 import java.util.Set;
@@ -130,19 +131,16 @@ class AccountItemAuto
                 DataTransformer tot = new DataTransformer(session,child,true,pw,job, context.getCompanyCode(), context.getAccountGroup(), "auto",context.getParentDate());
                 totalOpenItems = tot.getRuleSet1();
                 //totalOpenItemsSet = tot.getTotalCollectedSet();
-                tot = null;
             }
             else if(collectParents.contains(p) && c.startsWith("CUS_DT"))
             {
                 DataTransformer dt = new DataTransformer(session,child,false,pw,job,context.getCompanyCode(), context.getAccountGroup(),"auto",context.getParentDate());
                 addDt(dt);
-                dt = null;
             }
             else if(c.equals("CUS_TRN_COLLECT_RTX"))
             {
                 DataTransformer dt = new DataTransformer(session,child,false,pw,job,context.getCompanyCode(), context.getAccountGroup(),"auto",context.getParentDate());
                 totalCollected += dt.getTotalCollected();
-                dt = null;
             }
             else if(c.equals("FCA_SAP_Tran_FB05_Clearing"))
             {
@@ -155,7 +153,7 @@ class AccountItemAuto
                     //throw new Exception("Clear 2x in chain " + child.getJobId());
                     //jcsOut.println("Clear 2x in chain " + child.getJobId());
                 }
-                Map<String,List<String>> matchings = getMatchingRtx(child);
+                Map<String,List<String>> matchings = RTXService.getMatchingRtx(child);
                 String status = child.getStatus().getTranslationEN();
                 String okLines = getParameter(child,"OUT_DATA_OK_RTX");
                 String errorLines = getParameter(child,"OUT_DATA_ERROR_RTX");
@@ -212,7 +210,7 @@ class AccountItemAuto
     private void writeErrorsAndClearedSeparately(SchedulerSession session,Job child, Map<String, List<String>> matchings,Job job)
             throws Exception
     {
-        List<String> errorsList = getErrorsRtx(child);
+        List<String> errorsList = RTXService.getErrorsRtx(child);
         Map<String, List<String>> errorsMap = new HashMap<>();
         Map<String, List<String>> clearedMap = new HashMap<>(matchings);
         for (String error : errorsList)
@@ -222,43 +220,6 @@ class AccountItemAuto
         }
         if(!errorsMap.isEmpty()) writeItemsToFile(session,"errors", errorsMap,job);
         if(!clearedMap.isEmpty()) writeItemsToFile(session,"cleared", clearedMap,job);
-    }
-
-
-
-
-
-    private Map<String,List<String>> getMatchingRtx(Job j)
-            throws Exception
-    {
-        Map<String,List<String>> answer = new HashMap<>();
-        if(j.getJobParameterByName("IN_DATA_RTX").getInValueTableParameter() == null) return answer;
-        RTXReader reader = j.getJobParameterByName("IN_DATA_RTX").getInValueTableParameter().getRTXReader();
-
-        for(RTXRow r : reader.rows())
-        {
-            String belnr = r.getString("BELNR");
-            String buzei = r.getString("BUZEI");
-            String key = r.getString("StartNewTransaction");
-            List<String> list = new ArrayList<>();
-            if(answer.containsKey(key)) list = answer.get(key);
-            list.add(belnr + buzei);
-            answer.put(key,list);
-        }
-        return answer;
-    }
-
-    private List<String> getErrorsRtx(Job j)
-            throws Exception
-    {
-        RTXReader reader = j.getJobParameterByName("OUT_DATA_ERROR_RTX").getOutValueTableParameter().getRTXReader();
-        List<String> answer = new ArrayList<>();
-        for(RTXRow r : reader.rows())
-        {
-            String key = r.getString("StartNewTransaction");
-            answer.add(key);
-        }
-        return answer;
     }
 
     public void clearSets()

@@ -6,6 +6,7 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.rtx.RTXReader;
 import com.redwood.scheduler.api.rtx.RTXRow;
+import com.redwood.scheduler.custom.kpi.kpi3.service.RTXService;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -115,7 +116,7 @@ public class ConditionalClearingRequest
                     String status = child.getStatus().getTranslationEN();
                     String okLines = getParameter(child,"OUT_DATA_OK_RTX");
                     String errorLines = getParameter(child,"OUT_DATA_ERROR_RTX");
-                    Map<String,List<String>> matchings = getMatchingRtx(child);
+                    Map<String,List<String>> matchings = RTXService.getMatchingRtxNew(child);
                     if(errorLines == null)
                     {
                         itemsCleared = selectedForClear; //all records cleared w/o errors
@@ -176,7 +177,7 @@ public class ConditionalClearingRequest
             throws Exception
     {
         p.println(matchings);
-        List<String> errorsList = getErrorsRtx(child);
+        List<String> errorsList = RTXService.getErrorsRtxNew(child);
         p.println(errorsList);
         Map<String, List<String>> errorsMap = new HashMap<>();
         Map<String, List<String>> clearedMap = new HashMap<>(matchings);
@@ -265,39 +266,6 @@ public class ConditionalClearingRequest
                 }
             }
         }
-    }
-
-    private Map<String,List<String>> getMatchingRtx(Job j)
-            throws Exception
-    {
-        if(j.getJobParameterByName("IN_DATA_RTX").getInValueTableParameter() == null) return new HashMap<>();
-        RTXReader reader = j.getJobParameterByName("IN_DATA_RTX").getInValueTableParameter().getRTXReader();
-        Map<String,List<String>> answer = new HashMap<>();
-        for(RTXRow r : reader.rows())
-        {
-            String belnr = r.getString("DocumentNo");
-            String buzei = r.getString("Doc.Item");
-            String key = r.getString("Rule_MatchKey");
-            List<String> list = new ArrayList<>();
-            if(answer.containsKey(key)) list = answer.get(key);
-            list.add(belnr + buzei);
-            answer.put(key,list);
-        }
-        return answer;
-    }
-
-    private List<String> getErrorsRtx(Job j)
-            throws Exception
-    {
-        if(j.getJobParameterByName("OUT_DATA_ERROR_RTX").getOutValueTableParameter() == null) return new ArrayList<>();
-        RTXReader reader = j.getJobParameterByName("OUT_DATA_ERROR_RTX").getOutValueTableParameter().getRTXReader();
-        List<String> answer = new ArrayList<>();
-        for(RTXRow r : reader.rows())
-        {
-            String key = r.getString("Rule_MatchKey");
-            answer.add(key);
-        }
-        return answer;
     }
 
     private Long getLink(Job j)
