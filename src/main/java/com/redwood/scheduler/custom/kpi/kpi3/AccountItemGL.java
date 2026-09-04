@@ -3,25 +3,13 @@ package com.redwood.scheduler.custom.kpi.kpi3;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
+
 import java.io.PrintWriter;
 
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
 class AccountItemGL
 {
-    private DateTimeZone runStartDate;
-    private DateTimeZone runEndDate;
-    private DateTimeZone parentDate;
-    private String status;
-    private String name;
-    private Long id;
-    private String accountGroup;
-    private String companyCode;
+    private final AccountItemContext context;
     private int ruleSet1 = 0;
     private int autoClear = 0;
     private int suggestedClear = 0;
@@ -29,20 +17,10 @@ class AccountItemGL
     private int totalCollected = 0;
     private int totalOpenItems = 0;
 
-    private Job j;
-
-    public AccountItemGL(Job j,DateTimeZone parentDate)
+    public AccountItemGL(Job job,DateTimeZone parentDate)
             throws Exception
     {
-        this.parentDate = parentDate;
-        this.j = j;
-        id = j.getJobId();
-        runStartDate = j.getRunStart();
-        runEndDate = j.getRunEnd();
-        status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
-        accountGroup = getAccountGroups(j);
-        companyCode = getParameter(j,"BUKRS");
+        this.context = new AccountItemContext(job, parentDate);
     }
     private void addGl(GL gl)
     {
@@ -54,31 +32,31 @@ class AccountItemGL
     }
     public DateTimeZone getRunStartDate()
     {
-        return runStartDate;
+        return context.getRunStartDate();
     }
     public DateTimeZone getRunEndDate()
     {
-        return runEndDate;
+        return context.getRunEndDate();
     }
     public String getStatus()
     {
-        return status;
+        return context.getStatus();
     }
     public String getName()
     {
-        return name;
+        return context.getName();
     }
     public Long getId()
     {
-        return id;
+        return context.getId();
     }
     public String getAccountGroup()
     {
-        return accountGroup;
+        return context.getAccountGroup();
     }
     public String getCompanyCode()
     {
-        return companyCode;
+        return context.getCompanyCode();
     }
     public int getRuleSet1()
     {
@@ -103,7 +81,7 @@ class AccountItemGL
     public void collectChildren(SchedulerSession session,PrintWriter p, Job job)
             throws Exception
     {
-        scan(session,j,p,job);
+        scan(session,context.getJob(),p,job);
     }
     private void scan(SchedulerSession session,Job parent, PrintWriter p, Job job)
             throws Exception
@@ -113,10 +91,9 @@ class AccountItemGL
             if(relevantJob(parent,child))
             {
                 p.println("Account Item GL - scan found " + child.getJobId());
-                GL gl = new GL(child,parentDate);
+                GL gl = new GL(child,context.getParentDate());
                 gl.collectChildren(session,p,job);
                 addGl(gl);
-                gl = null;
             }
             scan(session,child,p,job);
         }
