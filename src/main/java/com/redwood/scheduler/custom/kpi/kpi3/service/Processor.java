@@ -1,10 +1,11 @@
-package com.redwood.scheduler.custom.kpi.kpi3;
+package com.redwood.scheduler.custom.kpi.kpi3.service;
 
 import com.redwood.scheduler.custom.kpi.kpi3.config.JobDefinitionRegistry;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.JobFile;
 import com.redwood.scheduler.api.date.DateTimeZone;
+import com.redwood.scheduler.custom.kpi.kpi3.model.WorkItem;
 
 import java.io.PrintWriter;
 import java.util.Collection;

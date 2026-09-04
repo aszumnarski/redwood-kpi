@@ -1,6 +1,6 @@
-package com.redwood.scheduler.custom.kpi.kpi3;
+package com.redwood.scheduler.custom.kpi.kpi3.model;
 
-class Reconciliation
+public class Reconciliation
 {
     private int total = 0;
     private int proposed = 0;

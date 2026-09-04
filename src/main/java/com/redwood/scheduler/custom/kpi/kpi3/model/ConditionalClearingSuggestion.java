@@ -1,11 +1,8 @@
-package com.redwood.scheduler.custom.kpi.kpi3;
+package com.redwood.scheduler.custom.kpi.kpi3.model;
 
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
-import com.redwood.scheduler.api.date.DateTimeZone;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.io.PrintWriter;
 
 public class ConditionalClearingSuggestion

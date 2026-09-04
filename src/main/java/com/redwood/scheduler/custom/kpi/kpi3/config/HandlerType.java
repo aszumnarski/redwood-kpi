@@ -2,7 +2,7 @@ package com.redwood.scheduler.custom.kpi.kpi3.config;
 
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
-import com.redwood.scheduler.custom.kpi.kpi3.*;
+import com.redwood.scheduler.custom.kpi.kpi3.model.*;
 
 import java.io.PrintWriter;
 

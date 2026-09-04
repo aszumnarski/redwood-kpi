@@ -1,4 +1,4 @@
-package com.redwood.scheduler.custom.kpi.kpi3;
+package com.redwood.scheduler.custom.kpi.kpi3.model;
 
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.JobFile;
@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
@@ -300,19 +299,37 @@ public class ConditionalClearingRequest
         }
         return answer;
     }
+
     private Long getLink(Job j)
     {
-        Long answer = -1l;
-        String inExcel = getParameter(j,"IN_FILE_FROM_EP");
-        String[] parts = inExcel.split("_",-1);
-        for(String part:parts)
+        String inExcel = getParameter(j, "IN_FILE_FROM_EP");
+
+        Long answer = -1L;
+
+        if (inExcel == null)
         {
-            if(part.startsWith("ProcessID"))
+            throw new RuntimeException(
+                    "Missing IN_FILE_FROM_EP parameter for job "
+                            + j.getJobId()
+                            + " (" + j.getJobDefinition().getName() + ")"
+            );
+        }
+
+
+
+        String[] parts = inExcel.split("_", -1);
+
+        for (String part : parts)
+        {
+            if (part.startsWith("ProcessID"))
             {
-                answer = Long.valueOf(part.replace("ProcessID",""));
+                answer = Long.valueOf(
+                        part.replace("ProcessID", "")
+                );
                 break;
             }
         }
+
         return answer;
     }
 }

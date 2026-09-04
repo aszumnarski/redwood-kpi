@@ -1,4 +1,4 @@
-package com.redwood.scheduler.custom.kpi.kpi3;
+package com.redwood.scheduler.custom.kpi.kpi3.model;
 import com.redwood.scheduler.api.date.DateTimeZone;
 import java.util.Objects;
 

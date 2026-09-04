@@ -1,4 +1,4 @@
-package com.redwood.scheduler.custom.kpi.kpi3;
+package com.redwood.scheduler.custom.kpi.kpi3.model;
 
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.JobFile;
@@ -7,10 +7,8 @@ import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.rtx.RTXReader;
 import com.redwood.scheduler.api.rtx.RTXRow;
 
-import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.ArrayList;
 
 import java.io.FileOutputStream;
 import java.io.PrintWriter;

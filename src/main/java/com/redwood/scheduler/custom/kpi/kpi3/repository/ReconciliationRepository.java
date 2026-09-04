@@ -1,10 +1,12 @@
-package com.redwood.scheduler.custom.kpi.kpi3;
+package com.redwood.scheduler.custom.kpi.kpi3.repository;
 
 import com.redwood.scheduler.api.model.APIResultSetCallback;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.exception.SchedulerAPIPersistenceException;
 import java.sql.SQLException;
 import com.redwood.scheduler.api.model.ObjectGetter;
+import com.redwood.scheduler.custom.kpi.kpi3.model.Reconciliation;
+
 import java.sql.ResultSet;
 
 public class ReconciliationRepository

@@ -1,4 +1,4 @@
-package com.redwood.scheduler.custom.kpi.kpi3;
+package com.redwood.scheduler.custom.kpi.kpi3.service;
 
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.model.Job;
