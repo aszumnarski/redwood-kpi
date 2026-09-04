@@ -1,24 +1,16 @@
 package com.redwood.scheduler.custom.kpi.kpi3.model;
 
 import com.redwood.scheduler.api.model.Job;
-import com.redwood.scheduler.api.model.JobFile;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
-import com.redwood.scheduler.api.rtx.RTXReader;
-import com.redwood.scheduler.api.rtx.RTXRow;
+import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
 import com.redwood.scheduler.custom.kpi.kpi3.service.RTXService;
 
 import java.util.List;
 import java.util.Set;
-import java.util.ArrayList;
 import java.util.Map;
-import java.util.HashMap;
-import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
-import static com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec.getFileName;
-import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
-import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
 import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
 class AccountItemAuto
@@ -32,22 +24,22 @@ class AccountItemAuto
     private int ruleSet1 = 0;
     private int autoClear = 0;
     private int errors = 0;
-    private Set<String> errorsSet;
     private int suggestedClear = 0;
     private int totalCollected = 0;
-    private Set<String> totalCollectedSet;
-    //private List<DataTransformer> dts;
     private final AccountItemContext context;
+    private final ResultFileWriter fileWriter;
 
     public AccountItemAuto(Job job,DateTimeZone parentDate)
             throws Exception
     {
         this.context = new AccountItemContext(job, parentDate);
+        this.fileWriter = new ResultFileWriter(context, "auto");
     }
 
     public AccountItemAuto(AccountItemAutoOld aio)
     {
         this.context = aio.getContext();
+        this.fileWriter = new ResultFileWriter(context, "auto");
         clearId = aio.getClearId();
         prepId = aio.getPrepId();
         totalOpenItems = aio.getTotalOpenItems();
@@ -62,6 +54,7 @@ class AccountItemAuto
     public AccountItemAuto(AccountItemAutoLedger aio)
     {
         this.context = aio.getContext();
+        this.fileWriter = new ResultFileWriter(context, "auto");
         clearId = aio.getClearId();
         prepId = aio.getPrepId();
         totalOpenItems = aio.getTotalOpenItems();
@@ -81,10 +74,6 @@ class AccountItemAuto
         totalCollected += autoClear + suggestedClear;
     }
 
-    public int getRuleSet1()
-    {
-        return ruleSet1;
-    }
     public int getAutoClear()
     {
         return autoClear;
@@ -117,7 +106,7 @@ class AccountItemAuto
     private void scan(SchedulerSession session, Job parent,PrintWriter pw, Job job)
             throws Exception
     {
-        List<String> clearingParents = List.of("CUS_SPD_AutoClearing_ErrorReport","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_Phase4","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_SOFOM","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_US");
+        //List<String> clearingParents = List.of("CUS_SPD_AutoClearing_ErrorReport","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_Phase4","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_SOFOM","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_US");
         List<String> collectParents = List.of("CUS_SPD_BSC_AUTOCLEAR_RULES_WEA_new","CUS_SPD_BSC_AUTOCLEAR_RULES_Sherpax_Global_new","CUS_SPD_BSC_AUTOCLEAR_RULES_Sherpax_Focus4_new","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_Phase4","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_SOFOM","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_US");
         List<String> baseParents = List.of("CUS_TD_BSC_AUTOCLEAR_WEA","CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_Original","CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH","CUS_TD_BSC_AUTOCLEAR_SHERPAX_new","CUS_TD_BSC_AUTOCLEAR_Cashmatching_E1P_US");
         String p = parent.getJobDefinition().getMasterJobDefinition().getName();
@@ -154,97 +143,26 @@ class AccountItemAuto
                     //jcsOut.println("Clear 2x in chain " + child.getJobId());
                 }
                 Map<String,List<String>> matchings = RTXService.getMatchingRtx(child);
-                String status = child.getStatus().getTranslationEN();
                 String okLines = getParameter(child,"OUT_DATA_OK_RTX");
                 String errorLines = getParameter(child,"OUT_DATA_ERROR_RTX");
                 if(errorLines == null)
                 {
                     itemsCleared = totalCollected; //all records cleared w/o errors
-                    if(!matchings.isEmpty()) writeItemsToFile(session, "cleared", matchings, job);
+                    if(!matchings.isEmpty()) itemsCleared += fileWriter.writeItemsToFile(session, job,"cleared", matchings);
                 }
                 else if(okLines == null)
                 {
                     errors = totalCollected; // no items cleared
-                    if(!matchings.isEmpty()) writeItemsToFile(session, "errors", matchings, job);
+                    if(!matchings.isEmpty()) errors += fileWriter.writeItemsToFile(session, job,"errors", matchings);
                 }
                 else
                 {
-                    writeErrorsAndClearedSeparately(session,child,matchings,job);
+                    WriteResult result = fileWriter.writeErrorsAndClearedSeparately(session,child,job,matchings);
+                    itemsCleared += result.clearedCount();
+                    errors += result.errorCount();
                 }
             }
             scan(session,child,pw,job);
         }
     }
-
-    private void writeItemsToFile(SchedulerSession session,String type, Map<String, List<String>> itemsMap, Job job)
-            throws Exception
-    {
-        String fileName = getFileName(new FileKey(context.getParentDate(),context.getCompanyCode(), context.getAccountGroup(),"auto",type));
-        boolean append = true;
-        JobFile jf = job.getJobFileByName(fileName);
-        if (jf == null)
-        {
-            jf = createJobFile(session,job, fileName);
-            append = false;
-        }
-        try (FileOutputStream out = new FileOutputStream(jf.getFileName(), append))
-        {
-            for (String key : itemsMap.keySet())
-            {
-                int count = itemsMap.get(key).size();
-                if (type.equals("cleared"))
-                {
-                    itemsCleared += count;
-                }
-                else if (type.equals("errors"))
-                {
-                    errors += count;
-                }
-                for (String item : itemsMap.get(key))
-                {
-                    write(out, item);
-                }
-            }
-        }
-    }
-    private void writeErrorsAndClearedSeparately(SchedulerSession session,Job child, Map<String, List<String>> matchings,Job job)
-            throws Exception
-    {
-        List<String> errorsList = RTXService.getErrorsRtx(child);
-        Map<String, List<String>> errorsMap = new HashMap<>();
-        Map<String, List<String>> clearedMap = new HashMap<>(matchings);
-        for (String error : errorsList)
-        {
-            errorsMap.put(error, matchings.get(error));
-            clearedMap.remove(error);
-        }
-        if(!errorsMap.isEmpty()) writeItemsToFile(session,"errors", errorsMap,job);
-        if(!clearedMap.isEmpty()) writeItemsToFile(session,"cleared", clearedMap,job);
-    }
-
-    public void clearSets()
-    {
-        totalOpenItemsSet = null;
-        itemsClearedSet = null;
-        errorsSet = null;
-        totalCollectedSet = null;
-    }
-
-    public Set<String> getTotalOpenItemsSet()
-    {
-        return totalOpenItemsSet;
-    }
-    public Set<String> getTotalCollectedSet()
-    {
-        return totalCollectedSet;
-    }
-    public Set<String> getItemsClearedSet()
-    {
-        return itemsClearedSet;
-    }
-    public Set<String> getErrorsSet()
-    {
-        return errorsSet;
-    }
-
 }
