@@ -3,23 +3,16 @@ package com.redwood.scheduler.custom.kpi.kpi3;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
+import com.redwood.scheduler.custom.kpi.kpi3.config.AccountItemType;
+import com.redwood.scheduler.custom.kpi.kpi3.config.AutoRule;
+import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
+import com.redwood.scheduler.custom.kpi.kpi3.config.ParentDifferentChildRule;
 
-import java.util.List;
-import java.util.ArrayList;
 import java.io.PrintWriter;
+import java.util.List;
 
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
-
-public class AutoClearing
-{
+public class AutoClearing {
     private DateTimeZone runStartDate;
-    private DateTimeZone runEndDate;
-    private String status;
-    private String name;
-    private Long id;
-    private String accountGroups;
-    private String companyCode;
     private int totalOpenItems = 0;
     private int selectedForClear = 0;
     private int itemsCleared = 0;
@@ -28,203 +21,135 @@ public class AutoClearing
     private int suggestedClear = 0;
     private Job j;
 
-    public AutoClearing(Job j)
-            throws Exception
-    {
+    private static final List<AutoRule> RULES = List.of(
+
+            new ExactMatchRule(
+                    "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_WEA",
+                    "CUS_TD_BSC_AUTOCLEAR_WEA",
+                    AccountItemType.AUTO),
+
+            new ParentDifferentChildRule(
+                    "CUS_SPD_BSC_AUTOCLEAR_RULES_WEA",
+                    AccountItemType.AUTO_OLD),
+
+            new ExactMatchRule(
+                    "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_SHERPAX_LDGRP",
+                    "CUS_TD_BSC_AUTOCLEAR_SHERPAX_LDGRP",
+                    AccountItemType.AUTO_LEDGER),
+
+            new ExactMatchRule(
+                    "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_SHERPAX_new",
+                    "CUS_TD_BSC_AUTOCLEAR_SHERPAX_new",
+                    AccountItemType.AUTO),
+
+            new ExactMatchRule(
+                    "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_CB_IN_byAccountItem",
+                    "CUS_TD_BSC_AUTOCLEAR_CB_IN",
+                    AccountItemType.AUTO_OLD),
+
+            new ExactMatchRule(
+                    "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_CB_IN_bySchedule",
+                    "CUS_TD_BSC_AUTOCLEAR_CB_IN",
+                    AccountItemType.AUTO_OLD),
+            new ExactMatchRule(
+                    "CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH",
+                    "CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH",
+                    AccountItemType.AUTO_LEDGER),
+
+            new ExactMatchRule(
+                    "CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH_Original",
+                    "CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_Original",
+                    AccountItemType.AUTO),
+
+            new ExactMatchRule(
+                    "CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH_SOFOM",
+                    "CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH",
+                    AccountItemType.AUTO),
+
+            new ExactMatchRule(
+                    "CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH_US",
+                    "CUS_TD_BSC_AUTOCLEAR_Cashmatching_E1P_US",
+                    AccountItemType.AUTO)
+
+    );
+
+    public AutoClearing(Job j) {
         this.j = j;
-        id = j.getJobId();
         runStartDate = j.getRunStart();
-        runEndDate = j.getRunEnd();
-        status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
-        accountGroups = getAccountGroups(j);
-        companyCode = getParameter(j,"BUKRS");
     }
 
-    public void collectActionItems(SchedulerSession session,PrintWriter p, Job job)
-            throws Exception
-    {
-        scan(session,j,p,job);
+    public void collectActionItems(SchedulerSession session, PrintWriter p, Job job)
+            throws Exception {
+        scan(session, j, p, job);
     }
 
-    private void scan(SchedulerSession session, Job parent,PrintWriter p, Job job)
-            throws Exception
-    {
-        for(Job child: parent.getChildJobs())
-        {
-            if(relevantJob(parent,child))
+    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job job)
+            throws Exception {
+        for (Job child : parent.getChildJobs()) {
+
+            AutoRule rule = findRule(parent, child);
+
+            if (rule != null)
             {
-                p.println("Account Item Auto - scan found 1 " + child.getJobId());
-                AccountItemAuto ai = new AccountItemAuto(child,runStartDate);
-                ai.collectChildren(session,p,job);
-                addAi(ai,p);
-                ai = null;
+                processRule(rule, child, session, p, job);
             }
-            else if(relevantJob2(parent,child))
-            {
-                p.println("Account Item Auto - scan found 2 " + child.getJobId());
-                AccountItemAutoOld aio = new AccountItemAutoOld(child,runStartDate);
-                aio.collectChildren(session,p,job);
-                AccountItemAuto ai = new AccountItemAuto(aio);
-                addAi(ai,p);
-                ai = null;
-            }
-            else if(relevantJob3(parent,child))
-            {
-                p.println("Account Item Auto - scan found 3 " + child.getJobId());
-                AccountItemAutoLedger ail = new AccountItemAutoLedger(child,runStartDate);
-                ail.collectChildren(session,p,job);
-                AccountItemAuto ai = new AccountItemAuto(ail);
-                addAi(ai,p);
-                ail = null;
-                ai = null;
-            }
-            else if(relevantJob4(parent,child))
-            {
-                p.println("Account Item Auto - scan found 4 " + child.getJobId());
-                AccountItemAuto ai = new AccountItemAuto(child,runStartDate);
-                ai.collectChildren(session,p,job);
-                addAi(ai,p);
-                ai = null;
-            }
-            else if(relevantJob5(parent,child))
-            {
-                p.println("Account Item Auto - scan found 5 " + child.getJobId());
-                AccountItemAutoOld aio = new AccountItemAutoOld(child,runStartDate);
-                aio.collectChildren(session,p,job);
-                AccountItemAuto ai = new AccountItemAuto(aio);
-                addAi(ai,p);
-                aio = null;
-                ai = null;
-            }
-            else if(relevantJob6(parent,child))
-            {
-                p.println("Account Item Auto - scan found 5 " + child.getJobId());
-                AccountItemAutoOld aio = new AccountItemAutoOld(child,runStartDate);
-                aio.collectChildren(session,p,job);
-                AccountItemAuto ai = new AccountItemAuto(aio);
-                addAi(ai,p);
-                ai = null;
-            }
-            else if(relevantJob7(parent,child))
-            {
-                p.println("Account Item Auto - scan found 7 " + child.getJobId());
-                AccountItemAutoLedger ail = new AccountItemAutoLedger(child,runStartDate);
-                ail.collectChildren(session,p,job);
-                AccountItemAuto ai = new AccountItemAuto(ail);
-                addAi(ai,p);
-                ai = null;
-            }
-            else if(relevantJob8(parent,child))
-            {
-                p.println("Account Item Auto - scan found 8 " + child.getJobId());
-                AccountItemAuto ai = new AccountItemAuto(child,runStartDate);
-                ai.collectChildren(session,p,job);
-                addAi(ai,p);
-                ai = null;
-            }
-            else if(relevantJob9(parent,child))
-            {
-                p.println("Account Item Auto - scan found 9 " + child.getJobId());
-                AccountItemAuto ai = new AccountItemAuto(child,runStartDate);
-                ai.collectChildren(session,p,job);
-                addAi(ai,p);
-                ai = null;
-            }
-            else if(relevantJob10(parent,child))
-            {
-                p.println("Account Item Auto - scan found 10 " + child.getJobId());
-                AccountItemAuto ai = new AccountItemAuto(child,runStartDate);
-                ai.collectChildren(session,p,job);
-                addAi(ai,p);
-                ai = null;
-            }
-            scan(session,child,p,job);
+
+            scan(session, child, p, job);
         }
     }
 
-    boolean relevantJob(Job parent,Job child)
+    private void processRule(
+            AutoRule rule,
+            Job child,
+            SchedulerSession session,
+            PrintWriter p,
+            Job job)
+            throws Exception
     {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        //jcsOut.println(p+"___________"+c);
-        return (p + c).equals("CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_WEACUS_TD_BSC_AUTOCLEAR_WEA");
+        switch (rule.type())
+        {
+            case AUTO:
+            {
+                AccountItemAuto ai = new AccountItemAuto(child, runStartDate);
+                ai.collectChildren(session, p, job);
+                addAi(ai, p);
+                break;
+            }
+
+            case AUTO_OLD:
+            {
+                AccountItemAutoOld aio = new AccountItemAutoOld(child, runStartDate);
+                aio.collectChildren(session, p, job);
+                addAi(new AccountItemAuto(aio), p);
+                break;
+            }
+
+            case AUTO_LEDGER:
+            {
+                AccountItemAutoLedger ail = new AccountItemAutoLedger(child, runStartDate);
+                ail.collectChildren(session, p, job);
+                addAi(new AccountItemAuto(ail), p);
+                break;
+            }
+        }
     }
 
-    boolean relevantJob2(Job parent,Job child)
+    private AutoRule findRule(Job parent, Job child)
     {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        //jcsOut.println(p+"___________"+c);
-        return (p).equals("CUS_SPD_BSC_AUTOCLEAR_RULES_WEA") && !(c).equals("CUS_SPD_BSC_AUTOCLEAR_RULES_WEA");
+        for (AutoRule rule : RULES)
+        {
+            if (rule.matches(parent, child))
+            {
+                return rule;
+            }
+        }
+
+        return null;
     }
 
-    boolean relevantJob3(Job parent,Job child)
-    {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        //jcsOut.println(p+"___________"+c);
-        return (p + c).equals("CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_SHERPAX_LDGRPCUS_TD_BSC_AUTOCLEAR_SHERPAX_LDGRP");
-    }
 
-    boolean relevantJob4(Job parent,Job child)
-    {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        //jcsOut.println(p+"___________"+c);
-        return (p + c).equals("CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_SHERPAX_newCUS_TD_BSC_AUTOCLEAR_SHERPAX_new");
-    }
 
-    boolean relevantJob5(Job parent,Job child)
-    {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        //jcsOut.println(p+"___________"+c);
-        return (p + c).equals("CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_CB_IN_byAccountItemCUS_TD_BSC_AUTOCLEAR_CB_IN");
-    }
-
-    boolean relevantJob6(Job parent,Job child)
-    {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        //jcsOut.println(p+"___________"+c);
-        return (p + c).equals("CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_CB_IN_byScheduleCUS_TD_BSC_AUTOCLEAR_CB_IN");
-    }
-
-    boolean relevantJob7(Job parent,Job child)
-    {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        //jcsOut.println(p+"___________"+c);
-        return (p + c).equals("CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASHCUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH");
-    }
-
-    boolean relevantJob8(Job parent,Job child)
-    {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        //jcsOut.println(p+"___________"+c);
-        return (p + c).equals("CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH_OriginalCUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_Original");
-    }
-
-    boolean relevantJob9(Job parent,Job child)
-    {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        //jcsOut.println(p+"___________"+c);
-        return (p + c).equals("CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH_SOFOMCUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH");
-    }
-
-    boolean relevantJob10(Job parent,Job child)
-    {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        //jcsOut.println(p+"___________"+c);
-        return (p + c).equals("CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH_USCUS_TD_BSC_AUTOCLEAR_Cashmatching_E1P_US");
-    }
-
-    private void addAi(AccountItemAuto ai,PrintWriter p)
-    {
+    private void addAi(AccountItemAuto ai, PrintWriter p) {
         totalOpenItems += ai.getTotalOpenItems();
         autoClear += ai.getAutoClear();
         suggestedClear += ai.getSuggestedClear();
