@@ -104,4 +104,8 @@ class AccountItemGL
         String c = child.getJobDefinition().getName();
         return ((p + c).equals("FCA_SAP_Generic_LoopCUS_TD_BSC_CONDITIONAL_AUTOCLEAR_REVIEW_GL"));
     }
+
+    public AccountItemContext getContext() {
+        return context;
+    }
 }

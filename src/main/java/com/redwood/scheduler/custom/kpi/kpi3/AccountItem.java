@@ -3,53 +3,28 @@ package com.redwood.scheduler.custom.kpi.kpi3;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
 
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
+import java.io.PrintWriter;
 
 class AccountItem
 {
-    private DateTimeZone runStartDate;
-    private DateTimeZone runEndDate;
-    private DateTimeZone parentDate;
-    private String status;
-    private String name;
-    private Long id;
-    private String accountGroup;
-    private String companyCode;
     private int ruleSet1 = 0;
     private int autoClear = 0;
     private int suggestedClear = 0;
     private int totalCollected = 0;
     private int totalOpenItems = 0;
-    private Job j;
 
-    public AccountItem(Job j,DateTimeZone parentDate)
+    private final AccountItemContext context;
+
+    public AccountItem(Job job,DateTimeZone parentDate)
             throws Exception
     {
-        this.parentDate = parentDate;
-        this.j = j;
-        id = j.getJobId();
-        runStartDate = j.getRunStart();
-        runEndDate = j.getRunEnd();
-        status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
-        accountGroup = getAccountGroups(j);
+        this.context = new AccountItemContext(job, parentDate);
     }
+
     public AccountItem(AccountItemGL aigl)
     {
-        runStartDate = aigl.getRunStartDate();
-        runEndDate = aigl.getRunEndDate();
-        status = aigl.getStatus();
-        name = aigl.getName();
-        id = aigl.getId();
-        accountGroup = aigl.getAccountGroup();
-        companyCode = aigl.getCompanyCode();
+        this.context = aigl.getContext();
         ruleSet1 = aigl.getRuleSet1();
         autoClear = aigl.getAutoClear();
         suggestedClear = aigl.getSuggestedClear();
@@ -88,7 +63,11 @@ class AccountItem
     public void collectChildren(SchedulerSession session,PrintWriter p, Job job)
             throws Exception
     {
-        scan(session,j,p,job);
+        scan(session, context.getJob(), p,job);
+    }
+    AccountItemContext getContext()
+    {
+        return context;
     }
     private void scan(SchedulerSession session,Job parent,PrintWriter p, Job job)
             throws Exception
@@ -98,25 +77,20 @@ class AccountItem
             if(relevantJob(parent,child))
             {
                 p.println("Account Item - scan found A " + child.getJobId());
-                DataTransformer dt = new DataTransformer(session,child,true,p,job,companyCode,accountGroup,"conditional",parentDate);
+                DataTransformer dt = new DataTransformer(session,child,true,p,job, context.getCompanyCode(), context.getAccountGroup(), "conditional",context.getParentDate());
                 addDt(dt);
-                dt = null;
             }
             else if(relevantJobB(child))
             {
                 p.println("Account Item - scan found B " + child.getJobId());
-                DataTransformer tot = new DataTransformer(session,child,true,p,job,companyCode,accountGroup,"conditional",parentDate);
+                DataTransformer tot = new DataTransformer(session,child,true,p,job, context.getCompanyCode(), context.getAccountGroup(), "conditional",context.getParentDate());
                 totalOpenItems = tot.getRuleSet1();
-                //totalOpenItemsSet = tot.getTotalCollectedSet();
-                tot = null;
             }
             else if(relevantJobC(child))
             {
                 p.println("Account Item - scan found C " + child.getJobId());
-                DataTransformer dt = new DataTransformer(session,child,false,p,job,companyCode,accountGroup,"conditional",parentDate);
+                DataTransformer dt = new DataTransformer(session,child,false,p,job, context.getCompanyCode(), context.getAccountGroup(), "conditional",context.getParentDate());
                 totalCollected = dt.getTotalCollected();
-                //totalCollectedSet = dt.getTotalCollectedSet();
-                dt = null;
             }
             scan(session,child,p,job);
         }

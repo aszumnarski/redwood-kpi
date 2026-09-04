@@ -9,7 +9,6 @@ import com.redwood.scheduler.api.rtx.RTXRow;
 
 import java.util.List;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
@@ -19,20 +18,11 @@ import java.io.PrintWriter;
 import static com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec.getFileName;
 import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
 import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
 import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
 class AccountItemAuto
 {
-    private DateTimeZone runStartDate;
-    private DateTimeZone runEndDate;
-    private DateTimeZone parentDate;
-    private String status;
-    private String name;
-    private Long id;
-    private String accountGroup;
-    private String companyCode;
-    private Long clearId = -1l;
+    private Long clearId = -1L;
     private Long prepId;
     private int totalOpenItems = 0;
     private Set<String> totalOpenItemsSet;
@@ -46,31 +36,17 @@ class AccountItemAuto
     private int totalCollected = 0;
     private Set<String> totalCollectedSet;
     //private List<DataTransformer> dts;
-    private Job j;
+    private final AccountItemContext context;
 
-    public AccountItemAuto(Job j,DateTimeZone parentDate)
+    public AccountItemAuto(Job job,DateTimeZone parentDate)
             throws Exception
     {
-        this.parentDate = parentDate;
-        this.j = j;
-        id = j.getJobId();
-        runStartDate = j.getRunStart();
-        runEndDate = j.getRunEnd();
-        status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
-        accountGroup = getAccountGroups(j);
-        companyCode = getParameter(j,"BUKRS");
+        this.context = new AccountItemContext(job, parentDate);
     }
 
     public AccountItemAuto(AccountItemAutoOld aio)
     {
-        runStartDate = aio.getRunStartDate();
-        runEndDate = aio.getRunEndDate();
-        status = aio.getStatus();
-        name = aio.getName();
-        id = aio.getId();
-        accountGroup = aio.getAccountGroup();
-        companyCode = aio.getCompanyCode();
+        this.context = aio.getContext();
         clearId = aio.getClearId();
         prepId = aio.getPrepId();
         totalOpenItems = aio.getTotalOpenItems();
@@ -84,13 +60,7 @@ class AccountItemAuto
 
     public AccountItemAuto(AccountItemAutoLedger aio)
     {
-        runStartDate = aio.getRunStartDate();
-        runEndDate = aio.getRunEndDate();
-        status = aio.getStatus();
-        name = aio.getName();
-        id = aio.getId();
-        accountGroup = aio.getAccountGroup();
-        companyCode = aio.getCompanyCode();
+        this.context = aio.getContext();
         clearId = aio.getClearId();
         prepId = aio.getPrepId();
         totalOpenItems = aio.getTotalOpenItems();
@@ -141,12 +111,12 @@ class AccountItemAuto
     public void collectChildren(SchedulerSession session, PrintWriter p,Job job)
             throws Exception
     {
-        scan(session,j,p,job);
+        scan(session, context.getJob(), p,job);
     }
     private void scan(SchedulerSession session, Job parent,PrintWriter pw, Job job)
             throws Exception
     {
-        List<String> clearingParents = List.of("CUS_SPD_AutoClearing_ErrorReport","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_Phase4","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_SOFOM,CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_US");
+        List<String> clearingParents = List.of("CUS_SPD_AutoClearing_ErrorReport","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_Phase4","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_SOFOM","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_US");
         List<String> collectParents = List.of("CUS_SPD_BSC_AUTOCLEAR_RULES_WEA_new","CUS_SPD_BSC_AUTOCLEAR_RULES_Sherpax_Global_new","CUS_SPD_BSC_AUTOCLEAR_RULES_Sherpax_Focus4_new","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_Phase4","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_SOFOM","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_US");
         List<String> baseParents = List.of("CUS_TD_BSC_AUTOCLEAR_WEA","CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_Original","CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH","CUS_TD_BSC_AUTOCLEAR_SHERPAX_new","CUS_TD_BSC_AUTOCLEAR_Cashmatching_E1P_US");
         String p = parent.getJobDefinition().getMasterJobDefinition().getName();
@@ -157,26 +127,26 @@ class AccountItemAuto
             //pw.println("child: " + c);
             if(baseParents.contains(p) && (c).contains("BaseWorking"))
             {
-                DataTransformer tot = new DataTransformer(session,child,true,pw,job,companyCode,accountGroup,"auto",parentDate);
+                DataTransformer tot = new DataTransformer(session,child,true,pw,job, context.getCompanyCode(), context.getAccountGroup(), "auto",context.getParentDate());
                 totalOpenItems = tot.getRuleSet1();
                 //totalOpenItemsSet = tot.getTotalCollectedSet();
                 tot = null;
             }
             else if(collectParents.contains(p) && c.startsWith("CUS_DT"))
             {
-                DataTransformer dt = new DataTransformer(session,child,false,pw,job,companyCode,accountGroup,"auto",parentDate);
+                DataTransformer dt = new DataTransformer(session,child,false,pw,job,context.getCompanyCode(), context.getAccountGroup(),"auto",context.getParentDate());
                 addDt(dt);
                 dt = null;
             }
             else if(c.equals("CUS_TRN_COLLECT_RTX"))
             {
-                DataTransformer dt = new DataTransformer(session,child,false,pw,job,companyCode,accountGroup,"auto",parentDate);
+                DataTransformer dt = new DataTransformer(session,child,false,pw,job,context.getCompanyCode(), context.getAccountGroup(),"auto",context.getParentDate());
                 totalCollected += dt.getTotalCollected();
                 dt = null;
             }
             else if(c.equals("FCA_SAP_Tran_FB05_Clearing"))
             {
-                if(clearId == -1l)
+                if(clearId == -1L)
                 {
                     clearId = child.getJobId();
                 }
@@ -192,12 +162,12 @@ class AccountItemAuto
                 if(errorLines == null)
                 {
                     itemsCleared = totalCollected; //all records cleared w/o errors
-                    if(matchings.size() > 0) writeItemsToFile(session, "cleared", matchings, job);
+                    if(!matchings.isEmpty()) writeItemsToFile(session, "cleared", matchings, job);
                 }
-                else if(errorLines != null && okLines == null)
+                else if(okLines == null)
                 {
                     errors = totalCollected; // no items cleared
-                    if(matchings.size() > 0) writeItemsToFile(session, "errors", matchings, job);
+                    if(!matchings.isEmpty()) writeItemsToFile(session, "errors", matchings, job);
                 }
                 else
                 {
@@ -211,7 +181,7 @@ class AccountItemAuto
     private void writeItemsToFile(SchedulerSession session,String type, Map<String, List<String>> itemsMap, Job job)
             throws Exception
     {
-        String fileName = getFileName(new FileKey(parentDate,companyCode,accountGroup,"auto",type));
+        String fileName = getFileName(new FileKey(context.getParentDate(),context.getCompanyCode(), context.getAccountGroup(),"auto",type));
         boolean append = true;
         JobFile jf = job.getJobFileByName(fileName);
         if (jf == null)
@@ -250,8 +220,8 @@ class AccountItemAuto
             errorsMap.put(error, matchings.get(error));
             clearedMap.remove(error);
         }
-        if(errorsMap.size() > 0) writeItemsToFile(session,"errors", errorsMap,job);
-        if(clearedMap.size() > 0) writeItemsToFile(session,"cleared", clearedMap,job);
+        if(!errorsMap.isEmpty()) writeItemsToFile(session,"errors", errorsMap,job);
+        if(!clearedMap.isEmpty()) writeItemsToFile(session,"cleared", clearedMap,job);
     }
 
 

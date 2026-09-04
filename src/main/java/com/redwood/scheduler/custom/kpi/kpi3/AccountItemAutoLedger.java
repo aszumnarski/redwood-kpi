@@ -1,34 +1,17 @@
 package com.redwood.scheduler.custom.kpi.kpi3;
 
 import com.redwood.scheduler.api.model.Job;
-import com.redwood.scheduler.api.model.JobFile;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
-import com.redwood.scheduler.api.rtx.RTXReader;
-import com.redwood.scheduler.api.rtx.RTXRow;
 
-import java.util.List;
 import java.util.Set;
-import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-import java.io.PrintWriter;
 
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
+import java.io.PrintWriter;
 
 class AccountItemAutoLedger
 {
-    private DateTimeZone runStartDate;
-    private DateTimeZone runEndDate;
-    private DateTimeZone parentDate;
-    private String status;
-    private String name;
-    private Long id;
-    private String accountGroup;
-    private String companyCode;
-    private Long clearId = -1l;
+
+    private Long clearId = -1L;
     private Long prepId;
     private int totalOpenItems = 0;
     private Set<String> totalOpenItemsSet;
@@ -41,20 +24,14 @@ class AccountItemAutoLedger
     private int suggestedClear = 0;
     private int totalCollected = 0;
     private Set<String> totalCollectedSet;
-    private Job j;
 
-    public AccountItemAutoLedger(Job j, DateTimeZone parentDate)
+    private final AccountItemContext context;
+
+
+    public AccountItemAutoLedger(Job job,DateTimeZone parentDate)
             throws Exception
     {
-        this.parentDate = parentDate;
-        this.j = j;
-        id = j.getJobId();
-        runStartDate = j.getRunStart();
-        runEndDate = j.getRunEnd();
-        status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
-        accountGroup = getAccountGroups(j);
-        companyCode = getParameter(j,"BUKRS");
+        this.context = new AccountItemContext(job, parentDate);
     }
 
     private void addLedger(Ledger l,PrintWriter p)
@@ -99,7 +76,7 @@ class AccountItemAutoLedger
     public void collectChildren(SchedulerSession session,PrintWriter p,Job job)
             throws Exception
     {
-        scan(session, j,p,job);
+        scan(session, context.getJob(), p,job);
     }
     private void scan(SchedulerSession session, Job parent, PrintWriter p,Job job)
             throws Exception
@@ -108,17 +85,15 @@ class AccountItemAutoLedger
         {
             if(relevantJob(parent,child))
             {
-                Ledger l = new Ledger(child,parentDate);
+                Ledger l = new Ledger(child,context.getParentDate());
                 l.collectChildren(session,p,job);
                 addLedger(l,p);
-                l = null;
             }
             else if(relevantJob2(parent,child))
             {
-                Ledger l = new Ledger(child,parentDate);
+                Ledger l = new Ledger(child,context.getParentDate());
                 l.collectChildren(session,p,job);
                 addLedger(l,p);
-                l = null;
             }
             scan(session,child,p,job);
         }
@@ -154,23 +129,23 @@ class AccountItemAutoLedger
     }
     public DateTimeZone getRunStartDate()
     {
-        return runStartDate;
+        return context.getRunStartDate();
     }
     public DateTimeZone getRunEndDate()
     {
-        return runEndDate;
+        return context.getRunEndDate();
     }
     public String getStatus()
     {
-        return status;
+        return context.getStatus();
     }
     public String getName()
     {
-        return name;
+        return context.getName();
     }
     public Long getId()
     {
-        return id;
+        return context.getId();
     }
     public Long getClearId()
     {
@@ -182,11 +157,14 @@ class AccountItemAutoLedger
     }
     public String getAccountGroup()
     {
-        return accountGroup;
+        return context.getAccountGroup();
     }
     public String getCompanyCode()
     {
-        return companyCode;
+        return context.getCompanyCode();
     }
 
+    public AccountItemContext getContext() {
+        return context;
+    }
 }

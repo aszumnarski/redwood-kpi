@@ -9,7 +9,6 @@ import com.redwood.scheduler.api.rtx.RTXRow;
 
 import java.util.List;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
@@ -20,21 +19,12 @@ import java.io.FileOutputStream;
 import static com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec.getFileName;
 import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
 import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
 import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
 class AccountItemAutoOld
 {
-    private DateTimeZone runStartDate;
-    private DateTimeZone runEndDate;
-    private DateTimeZone parentDate;
-    private String status;
-    private String name;
-    private Long id;
-    private String accountGroup;
-    private String companyCode;
-    private Long clearId = -1l;
-    private Long prepId;
+    private Long clearId = -1L;
+    private long prepId;
     private int totalOpenItems = 0;
     private Set<String> totalOpenItemsSet;
     private int itemsCleared = 0;
@@ -46,21 +36,13 @@ class AccountItemAutoOld
     private int suggestedClear = 0;
     private int totalCollected = 0;
     private Set<String> totalCollectedSet;
-    //private List<DataTransformer> dts;
-    private Job j;
 
-    public AccountItemAutoOld(Job j,DateTimeZone parentDate)
+    private final AccountItemContext context;
+
+    public AccountItemAutoOld(Job job,DateTimeZone parentDate)
             throws Exception
     {
-        this.parentDate = parentDate;
-        this.j = j;
-        id = j.getJobId();
-        runStartDate = j.getRunStart();
-        runEndDate = j.getRunEnd();
-        status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
-        accountGroup = getAccountGroups(j);
-        companyCode = getParameter(j,"BUKRS");
+        this.context = new AccountItemContext(job, parentDate);
     }
 
     private void addDt(DataTransformer dt)
@@ -73,23 +55,23 @@ class AccountItemAutoOld
 
     public DateTimeZone getRunStartDate()
     {
-        return runStartDate;
+        return context.getRunStartDate();
     }
     public DateTimeZone getRunEndDate()
     {
-        return runEndDate;
+        return context.getRunEndDate();
     }
     public String getStatus()
     {
-        return status;
+        return context.getStatus();
     }
     public String getName()
     {
-        return name;
+        return context.getName();
     }
     public Long getId()
     {
-        return id;
+        return context.getId();
     }
     public Long getClearId()
     {
@@ -109,11 +91,11 @@ class AccountItemAutoOld
     }
     public String getAccountGroup()
     {
-        return accountGroup;
+        return context.getAccountGroup();
     }
     public String getCompanyCode()
     {
-        return companyCode;
+        return context.getCompanyCode();
     }
     public int getRuleSet1()
     {
@@ -138,7 +120,7 @@ class AccountItemAutoOld
     public void collectChildren(SchedulerSession session, PrintWriter p, Job job)
             throws Exception
     {
-        scan(session,j,p,job);
+        scan(session, context.getJob(), p,job);
     }
     private void scan(SchedulerSession session,Job parent,PrintWriter pw, Job job)
             throws Exception
@@ -152,14 +134,13 @@ class AccountItemAutoOld
             //jcsOut.println(p+c);
             if(totalOpenItemsParents.contains(p)&&(c).contains("BaseWorking"))
             {
-                DataTransformer tot = new DataTransformer(session,child,true,pw,job,companyCode,accountGroup,"auto",parentDate);
+                DataTransformer tot = new DataTransformer(session,child,true,pw,job, context.getCompanyCode(), context.getAccountGroup(), "auto",context.getParentDate());
                 totalOpenItems = tot.getRuleSet1();
                 //totalOpenItemsSet = tot.getTotalCollectedSet();
-                tot = null;
             }
             else if(c.startsWith("CUS_DT"))
             {
-                DataTransformer dt = new DataTransformer(session,child,false,pw,job,companyCode,accountGroup,"auto",parentDate);
+                DataTransformer dt = new DataTransformer(session,child,false,pw,job, context.getCompanyCode(), context.getAccountGroup(), "auto",context.getParentDate());
                 addDt(dt);
             }
             else if(c.equals("FCA_SAP_Tran_FB05_Clearing"))
@@ -170,11 +151,11 @@ class AccountItemAutoOld
                 Map<String,List<String>> matchings = getMatchingRtx(child);
                 if(errorLines == null)
                 {
-                    if(matchings.size() > 0) writeItemsToFile(session,"cleared", matchings,job);
+                    if(!matchings.isEmpty()) writeItemsToFile(session,"cleared", matchings,job);
                 }
-                else if(errorLines != null && okLines == null)
+                else if(okLines == null)
                 {
-                    if(matchings.size() > 0) writeItemsToFile(session,"errors", matchings,job);
+                    if(!matchings.isEmpty()) writeItemsToFile(session,"errors", matchings,job);
                 }
                 else
                 {
@@ -188,7 +169,7 @@ class AccountItemAutoOld
     private void writeItemsToFile(SchedulerSession session,String type, Map<String, List<String>> itemsMap, Job job)
             throws Exception
     {
-        String fileName = getFileName(new FileKey(parentDate,companyCode,accountGroup,"auto",type));
+        String fileName = getFileName(new FileKey(context.getParentDate(), context.getCompanyCode(), context.getAccountGroup(), "auto",type));
         boolean append = true;
         JobFile jf = job.getJobFileByName(fileName);
         if (jf == null)
@@ -227,8 +208,8 @@ class AccountItemAutoOld
             errorsMap.put(error, matchings.get(error));
             clearedMap.remove(error);
         }
-        if(errorsMap.size() > 0) writeItemsToFile(session,"errors", errorsMap,job);
-        if(clearedMap.size() > 0) writeItemsToFile(session,"cleared", clearedMap,job);
+        if(!errorsMap.isEmpty()) writeItemsToFile(session,"errors", errorsMap,job);
+        if(!clearedMap.isEmpty()) writeItemsToFile(session,"cleared", clearedMap,job);
     }
 
     private Map<String,List<String>> getMatchingRtx(Job j)
@@ -286,5 +267,9 @@ class AccountItemAutoOld
     public Set<String> getErrorsSet()
     {
         return errorsSet;
+    }
+
+    public AccountItemContext getContext() {
+        return context;
     }
 }
