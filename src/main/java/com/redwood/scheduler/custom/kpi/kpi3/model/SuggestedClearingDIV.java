@@ -38,7 +38,7 @@ public class SuggestedClearingDIV
         runStartDate = j.getRunStart();
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
+        name = j.getJobDefinition().getMasterJobDefinition().getName();
         accountGroups = getAccountGroups(j);
         companyCode = getParameter(j,"BUKRS");
     }

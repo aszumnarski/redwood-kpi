@@ -1,7 +1,6 @@
 package com.redwood.scheduler.custom.kpi.kpi3.config;
 
 import com.redwood.scheduler.api.model.Job;
-import com.redwood.scheduler.script.java.impl.classloader.ClassNameRule;
 
 public class ExactMatchRule implements AutoRule
 {
@@ -19,15 +18,9 @@ public class ExactMatchRule implements AutoRule
     @Override
     public boolean matches(Job p, Job c)
     {
-        return parent.equals(
-                p.getJobDefinition()
-                        .getMasterJobDefinition()
-                        .getName())
+        return parent.equals(p.getJobDefinition().getMasterJobDefinition().getName())
                 &&
-                child.equals(
-                        c.getJobDefinition()
-                                .getMasterJobDefinition()
-                                .getName());
+                child.equals(c.getJobDefinition().getMasterJobDefinition().getName());
     }
 
     @Override

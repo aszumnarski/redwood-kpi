@@ -14,7 +14,7 @@ import java.io.PrintWriter;
 
 import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
-class AccountItemAutoOld
+class AccountItemAutoOld implements AccountItemSource
 {
     private Long clearId = -1L;
     private long prepId;
@@ -42,15 +42,6 @@ class AccountItemAutoOld
         autoClear += dt.getAutoClear();
         suggestedClear += dt.getSuggestedClear();
         totalCollected += autoClear + suggestedClear;
-    }
-
-    public DateTimeZone getRunStartDate()
-    {
-        return context.getRunStartDate();
-    }
-    public DateTimeZone getRunEndDate()
-    {
-        return context.getRunEndDate();
     }
     public String getStatus()
     {
@@ -118,10 +109,10 @@ class AccountItemAutoOld
     {
 
         Set<String> totalOpenItemsParents = Set.of("CUS_TD_BSC_AUTOCLEAR_WEA","CUS_TD_BSC_AUTOCLEAR_CB_IN");
-        String p = parent.getJobDefinition().getName();
+        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
         for(Job child: parent.getChildJobs())
         {
-            String c = child.getJobDefinition().getName();
+            String c = child.getJobDefinition().getMasterJobDefinition().getName();
             //jcsOut.println(p+c);
             if(totalOpenItemsParents.contains(p)&&(c).contains("BaseWorking"))
             {
@@ -138,7 +129,7 @@ class AccountItemAutoOld
             {
                 String okLines = getParameter(child,"OUT_DATA_OK_RTX");
                 String errorLines = getParameter(child,"OUT_DATA_ERROR_RTX");
-                Map<String,List<String>> matchings = RTXService.getMatchingRtx(child);
+                Map<String,List<String>> matchings = RTXService.getMatchingRtx(child,"BELNR","BUZEI","StartNewTransaction");
                 if(errorLines == null)
                 {
                     if(!matchings.isEmpty()) itemsCleared += fileWriter.writeItemsToFile(session, job,"cleared", matchings);

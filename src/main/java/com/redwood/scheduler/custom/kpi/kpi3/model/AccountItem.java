@@ -22,16 +22,6 @@ class AccountItem
         this.context = new AccountItemContext(job, parentDate);
     }
 
-    public AccountItem(AccountItemGL aigl)
-    {
-        this.context = aigl.getContext();
-        ruleSet1 = aigl.getRuleSet1();
-        autoClear = aigl.getAutoClear();
-        suggestedClear = aigl.getSuggestedClear();
-        totalOpenItems = aigl.getTotalOpenItems();
-        totalCollected = aigl.getTotalCollected();
-    }
-
     private void addDt(DataTransformer dt)
     {
         if (ruleSet1 == 0) ruleSet1 = dt.getRuleSet1();
@@ -65,10 +55,6 @@ class AccountItem
     {
         scan(session, context.getJob(), p,job);
     }
-    AccountItemContext getContext()
-    {
-        return context;
-    }
     private void scan(SchedulerSession session,Job parent,PrintWriter p, Job job)
             throws Exception
     {
@@ -97,18 +83,18 @@ class AccountItem
     }
     boolean relevantJob(Job parent,Job child)
     {
-        String p = parent.getJobDefinition().getName();
-        String c = child.getJobDefinition().getName();
+        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
+        String c = child.getJobDefinition().getMasterJobDefinition().getName();
         return (p.equals("CUS_SPD_BSC_SUGGESTEDCLEAR_RULES_WEA_new") && c.startsWith("CUS_DT"));
     }
     boolean relevantJobB(Job child)
     {
-        String c = child.getJobDefinition().getName();
+        String c = child.getJobDefinition().getMasterJobDefinition().getName();
         return c.contains("BaseWorking");
     }
     boolean relevantJobC(Job child)
     {
-        String c = child.getJobDefinition().getName();
+        String c = child.getJobDefinition().getMasterJobDefinition().getName();
         return c.equals("CUS_TRN_COLLECT_RTX");
     }
 }

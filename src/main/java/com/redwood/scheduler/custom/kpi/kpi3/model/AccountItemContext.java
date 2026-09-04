@@ -29,7 +29,7 @@ public class AccountItemContext
         this.runStartDate = job.getRunStart();
         this.runEndDate = job.getRunEnd();
         this.status = job.getStatus().getTranslationEN();
-        this.name = job.getJobDefinition().getName();
+        this.name = job.getJobDefinition().getMasterJobDefinition().getName();
         this.accountGroup = getAccountGroups(job);
         this.companyCode = getParameter(job, "BUKRS");
     }

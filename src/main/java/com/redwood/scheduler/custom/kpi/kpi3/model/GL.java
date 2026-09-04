@@ -36,7 +36,7 @@ class GL
         runStartDate = j.getRunStart();
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
+        name = j.getJobDefinition().getMasterJobDefinition().getName();
         accountGroup = getAccountGroups(j);
         companyCode = getParameter(j,"BUKRS");
         gl = getParameter(j,"SAKNR");
@@ -107,18 +107,18 @@ class GL
     }
     boolean relevantJob(Job parent,Job child)
     {
-        String p = parent.getJobDefinition().getName();
-        String c = child.getJobDefinition().getName();
+        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
+        String c = child.getJobDefinition().getMasterJobDefinition().getName();
         return (p.equals("CUS_SPD_BSC_SUGGESTEDCLEAR_RULES_WEA_new") && c.startsWith("CUS_DT"));
     }
     boolean relevantJobB(Job child)
     {
-        String c = child.getJobDefinition().getName();
+        String c = child.getJobDefinition().getMasterJobDefinition().getName();
         return c.contains("BaseWorking");
     }
     boolean relevantJobC(Job child)
     {
-        String c = child.getJobDefinition().getName();
+        String c = child.getJobDefinition().getMasterJobDefinition().getName();
         return c.equals("CUS_TRN_COLLECT_RTX");
     }
 }

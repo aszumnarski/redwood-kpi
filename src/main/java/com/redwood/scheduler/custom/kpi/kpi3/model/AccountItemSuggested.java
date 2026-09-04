@@ -52,7 +52,7 @@ class AccountItemSuggested
         runStartDate = j.getRunStart();
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
+        name = j.getJobDefinition().getMasterJobDefinition().getName();
         accountGroup = getAccountGroups(j);
         companyCode = getParameter(j,"BUKRS");
     }
@@ -107,10 +107,10 @@ class AccountItemSuggested
         List<String> collectParents = List.of("CUS_TD_BSC_SuggestedClearing_OneSided_MASTER_SHERPAX","CUS_TD_BSC_SuggestedClearing_OneSided_MASTER");
         List<String> baseParents = List.of("CUS_TD_BSC_SuggestedClearing_OneSided_MASTER_SHERPAX","CUS_TD_BSC_SuggestedClearing_OneSided_MASTER");
         List<String> dtParents = List.of("CUS_SPD_BSC_RULES_OIMGL_SHERPAX","CUS_SPD_BSC_SUGGESTEDCLEAR_RULES_WEA_new");
-        String p = parent.getJobDefinition().getName();
+        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
         for(Job child: parent.getChildJobs())
         {
-            String c = child.getJobDefinition().getName();
+            String c = child.getJobDefinition().getMasterJobDefinition().getName();
             //pw.println(p + "_______" + c);
       /*
       if(baseParents.contains(p)&&(c).contains("BaseWorking"))

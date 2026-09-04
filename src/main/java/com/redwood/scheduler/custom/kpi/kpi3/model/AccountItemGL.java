@@ -100,8 +100,8 @@ class AccountItemGL
     }
     boolean relevantJob(Job parent,Job child)
     {
-        String p = parent.getJobDefinition().getName();
-        String c = child.getJobDefinition().getName();
+        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
+        String c = child.getJobDefinition().getMasterJobDefinition().getName();
         return ((p + c).equals("FCA_SAP_Generic_LoopCUS_TD_BSC_CONDITIONAL_AUTOCLEAR_REVIEW_GL"));
     }
 

@@ -36,7 +36,7 @@ public class Processor
     private void processWorkItem(WorkItem item, SchedulerSession session, Job parentJob,PrintWriter p)
             throws Exception
     {
-        String definitionName = item.getJob().getJobDefinition().getName();
+        String definitionName = item.getJob().getJobDefinition().getMasterJobDefinition().getName();
         JobDefinitionRegistry definition = JobDefinitionRegistry.fromName(definitionName);
 
         if (definition == null)

@@ -52,7 +52,7 @@ public class ConditionalClearingRequest
         runStartDate = j.getRunStart();
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
+        name = j.getJobDefinition().getMasterJobDefinition().getName();
         suggestionId = getLink(j);
         accountGroups = getAccountGroups(j);
         companyCode = getParameter(j,"BUKRS");
@@ -67,11 +67,11 @@ public class ConditionalClearingRequest
     {
         for(Job child: parent.getChildJobs())
         {
-            String name = child.getJobDefinition().getName();
+            String name = child.getJobDefinition().getMasterJobDefinition().getName();
             switch(name)
             {
                 case("CUS_ConvertExcel2CSV2RTX_NoReplaceAll"):
-                    if(excelId == -1l)
+                    if(excelId == -1L)
                     {
                         excelId = child.getJobId();
                     }
@@ -113,10 +113,9 @@ public class ConditionalClearingRequest
                     {
                         p.println("Clear 2x in chain " + child.getJobId());
                     }
-                    String status = child.getStatus().getTranslationEN();
                     String okLines = getParameter(child,"OUT_DATA_OK_RTX");
                     String errorLines = getParameter(child,"OUT_DATA_ERROR_RTX");
-                    Map<String,List<String>> matchings = RTXService.getMatchingRtxNew(child);
+                    Map<String,List<String>> matchings = RTXService.getMatchingRtx(child,"DocumentNo","Doc.Item","Rule_MatchKey");
                     if(errorLines == null)
                     {
                         itemsCleared = selectedForClear; //all records cleared w/o errors
@@ -177,7 +176,7 @@ public class ConditionalClearingRequest
             throws Exception
     {
         p.println(matchings);
-        List<String> errorsList = RTXService.getErrorsRtxNew(child);
+        List<String> errorsList = RTXService.getErrorsRtx(child,"Rule_MatchKey");
         p.println(errorsList);
         Map<String, List<String>> errorsMap = new HashMap<>();
         Map<String, List<String>> clearedMap = new HashMap<>(matchings);
@@ -279,7 +278,7 @@ public class ConditionalClearingRequest
             throw new RuntimeException(
                     "Missing IN_FILE_FROM_EP parameter for job "
                             + j.getJobId()
-                            + " (" + j.getJobDefinition().getName() + ")"
+                            + " (" + j.getJobDefinition().getMasterJobDefinition().getName() + ")"
             );
         }
 

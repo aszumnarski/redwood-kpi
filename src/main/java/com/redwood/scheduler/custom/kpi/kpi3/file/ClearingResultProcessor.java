@@ -1,0 +1,66 @@
+package com.redwood.scheduler.custom.kpi.kpi3.file;
+
+import com.redwood.scheduler.api.model.Job;
+import com.redwood.scheduler.api.model.SchedulerSession;
+import com.redwood.scheduler.custom.kpi.kpi3.model.ClearingResult;
+import com.redwood.scheduler.custom.kpi.kpi3.model.WriteResult;
+import com.redwood.scheduler.custom.kpi.kpi3.service.RTXService;
+
+import java.util.List;
+import java.util.Map;
+
+import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
+
+public class ClearingResultProcessor
+{
+    private final ResultFileWriter fileWriter;
+
+    public ClearingResultProcessor(ResultFileWriter fileWriter)
+    {
+        this.fileWriter = fileWriter;
+    }
+
+    public ClearingResult process(
+            SchedulerSession session,
+            Job clearingJob,
+            Job outputJob,
+            int totalCollected)
+            throws Exception
+    {
+        Long clearId = clearingJob.getJobId();
+
+        String okLines = getParameter(clearingJob, "OUT_DATA_OK_RTX");
+
+        String errorLines = getParameter(clearingJob, "OUT_DATA_ERROR_RTX");
+
+        Map<String, List<String>> matchings = RTXService.getMatchingRtx(clearingJob, "BELNR", "BUZEI", "StartNewTransaction");
+
+        if (errorLines == null)
+        {
+            int itemsCleared = totalCollected;
+
+            if (!matchings.isEmpty())
+            {
+                itemsCleared += fileWriter.writeItemsToFile(session, outputJob, "cleared", matchings);
+            }
+
+            return new ClearingResult(clearId, itemsCleared, 0);
+        }
+
+        if (okLines == null)
+        {
+            int errors = totalCollected;
+
+            if (!matchings.isEmpty())
+            {
+                errors += fileWriter.writeItemsToFile(session, outputJob, "errors", matchings);
+            }
+
+            return new ClearingResult(clearId, 0, errors);
+        }
+
+        WriteResult result = fileWriter.writeErrorsAndClearedSeparately(session, clearingJob, outputJob, matchings);
+
+        return new ClearingResult(clearId, result.clearedCount(), result.errorCount());
+    }
+}

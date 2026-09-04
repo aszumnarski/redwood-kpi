@@ -1,7 +1,6 @@
 package com.redwood.scheduler.custom.kpi.kpi3.config;
 
 import com.redwood.scheduler.api.model.Job;
-import com.redwood.scheduler.script.java.impl.classloader.ClassNameRule;
 
 public class ParentDifferentChildRule implements AutoRule
 {
@@ -17,16 +16,11 @@ public class ParentDifferentChildRule implements AutoRule
     @Override
     public boolean matches(Job parent, Job child)
     {
-        String p = parent.getJobDefinition()
-                .getMasterJobDefinition()
-                .getName();
+        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
 
-        String c = child.getJobDefinition()
-                .getMasterJobDefinition()
-                .getName();
+        String c = child.getJobDefinition().getMasterJobDefinition().getName();
 
-        return parentName.equals(p)
-                && !parentName.equals(c);
+        return parentName.equals(p) && !parentName.equals(c);
     }
 
     @Override

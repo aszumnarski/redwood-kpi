@@ -3,24 +3,18 @@ package com.redwood.scheduler.custom.kpi.kpi3.model;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
+import com.redwood.scheduler.custom.kpi.kpi3.file.ClearingResultProcessor;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
-import com.redwood.scheduler.custom.kpi.kpi3.service.RTXService;
 
 import java.util.List;
-import java.util.Set;
-import java.util.Map;
 import java.io.PrintWriter;
-
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
 class AccountItemAuto
 {
     private Long clearId = -1L;
     private Long prepId;
     private int totalOpenItems = 0;
-    private Set<String> totalOpenItemsSet;
     private int itemsCleared = 0;
-    private Set<String> itemsClearedSet;
     private int ruleSet1 = 0;
     private int autoClear = 0;
     private int errors = 0;
@@ -28,42 +22,30 @@ class AccountItemAuto
     private int totalCollected = 0;
     private final AccountItemContext context;
     private final ResultFileWriter fileWriter;
+    private final ClearingResultProcessor clearingProcessor;
 
     public AccountItemAuto(Job job,DateTimeZone parentDate)
             throws Exception
     {
         this.context = new AccountItemContext(job, parentDate);
         this.fileWriter = new ResultFileWriter(context, "auto");
+        this.clearingProcessor = new ClearingResultProcessor(fileWriter);
     }
 
-    public AccountItemAuto(AccountItemAutoOld aio)
+    public AccountItemAuto(AccountItemSource source)
     {
-        this.context = aio.getContext();
+        this.context = source.getContext();
         this.fileWriter = new ResultFileWriter(context, "auto");
-        clearId = aio.getClearId();
-        prepId = aio.getPrepId();
-        totalOpenItems = aio.getTotalOpenItems();
-        itemsCleared = aio.getItemsCleared();
-        ruleSet1 = aio.getRuleSet1();
-        autoClear = aio.getAutoClear();
-        errors = aio.getErrors();
-        suggestedClear = aio.getSuggestedClear();
-        totalCollected = aio.getTotalCollected();
-    }
-
-    public AccountItemAuto(AccountItemAutoLedger aio)
-    {
-        this.context = aio.getContext();
-        this.fileWriter = new ResultFileWriter(context, "auto");
-        clearId = aio.getClearId();
-        prepId = aio.getPrepId();
-        totalOpenItems = aio.getTotalOpenItems();
-        itemsCleared = aio.getItemsCleared();
-        ruleSet1 = aio.getRuleSet1();
-        autoClear = aio.getAutoClear();
-        errors = aio.getErrors();
-        suggestedClear = aio.getSuggestedClear();
-        totalCollected = aio.getTotalCollected();
+        this.clearingProcessor = new ClearingResultProcessor(fileWriter);
+        clearId = source.getClearId();
+        prepId = source.getPrepId();
+        totalOpenItems = source.getTotalOpenItems();
+        itemsCleared = source.getItemsCleared();
+        ruleSet1 = source.getRuleSet1();
+        autoClear = source.getAutoClear();
+        errors = source.getErrors();
+        suggestedClear = source.getSuggestedClear();
+        totalCollected = source.getTotalCollected();
     }
 
     private void addDt(DataTransformer dt)
@@ -71,7 +53,7 @@ class AccountItemAuto
         if (ruleSet1 == 0) ruleSet1 = dt.getRuleSet1();
         autoClear += dt.getAutoClear();
         suggestedClear += dt.getSuggestedClear();
-        totalCollected += autoClear + suggestedClear;
+        totalCollected = autoClear + suggestedClear;
     }
 
     public int getAutoClear()
@@ -133,34 +115,10 @@ class AccountItemAuto
             }
             else if(c.equals("FCA_SAP_Tran_FB05_Clearing"))
             {
-                if(clearId == -1L)
-                {
-                    clearId = child.getJobId();
-                }
-                else
-                {
-                    //throw new Exception("Clear 2x in chain " + child.getJobId());
-                    //jcsOut.println("Clear 2x in chain " + child.getJobId());
-                }
-                Map<String,List<String>> matchings = RTXService.getMatchingRtx(child);
-                String okLines = getParameter(child,"OUT_DATA_OK_RTX");
-                String errorLines = getParameter(child,"OUT_DATA_ERROR_RTX");
-                if(errorLines == null)
-                {
-                    itemsCleared = totalCollected; //all records cleared w/o errors
-                    if(!matchings.isEmpty()) itemsCleared += fileWriter.writeItemsToFile(session, job,"cleared", matchings);
-                }
-                else if(okLines == null)
-                {
-                    errors = totalCollected; // no items cleared
-                    if(!matchings.isEmpty()) errors += fileWriter.writeItemsToFile(session, job,"errors", matchings);
-                }
-                else
-                {
-                    WriteResult result = fileWriter.writeErrorsAndClearedSeparately(session,child,job,matchings);
-                    itemsCleared += result.clearedCount();
-                    errors += result.errorCount();
-                }
+                ClearingResult result = clearingProcessor.process(session, child, job, totalCollected);
+                clearId = result.clearId();
+                itemsCleared += result.itemsCleared();
+                errors += result.errors();
             }
             scan(session,child,pw,job);
         }

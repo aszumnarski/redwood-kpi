@@ -30,7 +30,7 @@ public class Collector
     private void collectJob(Job j, PrintWriter p)
             throws Exception
     {
-        JobDefinitionRegistry def = JobDefinitionRegistry.fromName(j.getJobDefinition().getName());
+        JobDefinitionRegistry def = JobDefinitionRegistry.fromName(j.getJobDefinition().getMasterJobDefinition().getName());
         JobType type = def != null ? def.type : JobType.UNKNOWN;
 
         String period = getPeriod(j.getRunStart());

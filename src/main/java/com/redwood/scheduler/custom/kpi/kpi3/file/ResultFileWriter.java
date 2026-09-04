@@ -74,7 +74,7 @@ public class ResultFileWriter
     public WriteResult writeErrorsAndClearedSeparately(SchedulerSession session, Job child, Job job,Map<String, List<String>> matchings)
             throws Exception
     {
-        List<String> errorsList = RTXService.getErrorsRtx(child);
+        List<String> errorsList = RTXService.getErrorsRtx(child,"StartNewTransaction");
         Map<String, List<String>> errorsMap = new HashMap<>();
         Map<String, List<String>> clearedMap = new HashMap<>(matchings);
         for (String error : errorsList)

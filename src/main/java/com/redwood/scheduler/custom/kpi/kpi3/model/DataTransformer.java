@@ -51,7 +51,7 @@ class DataTransformer
         runStartDate = j.getRunStart();
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
+        name = j.getJobDefinition().getMasterJobDefinition().getName();
         if(!status.equals("Completed"))
         {
             ruleSet1 = 0;
@@ -85,7 +85,7 @@ class DataTransformer
         runStartDate = j.getRunStart();
         runEndDate = j.getRunEnd();
         status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getName();
+        name = j.getJobDefinition().getMasterJobDefinition().getName();
         if(!status.equals("Completed"))
         {
             ruleSet1 = 0;

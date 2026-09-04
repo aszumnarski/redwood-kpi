@@ -4,26 +4,20 @@ import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
 
-import java.util.Set;
-
 import java.io.PrintWriter;
 
-class AccountItemAutoLedger
+class AccountItemAutoLedger implements AccountItemSource
 {
 
     private Long clearId = -1L;
     private Long prepId;
     private int totalOpenItems = 0;
-    private Set<String> totalOpenItemsSet;
     private int itemsCleared = 0;
-    private Set<String> itemsClearedSet;
     private int ruleSet1 = 0;
     private int autoClear = 0;
     private int errors = 0;
-    private Set<String> errorsSet;
     private int suggestedClear = 0;
     private int totalCollected = 0;
-    private Set<String> totalCollectedSet;
 
     private final AccountItemContext context;
 
@@ -111,30 +105,6 @@ class AccountItemAutoLedger
         String c = child.getJobDefinition().getMasterJobDefinition().getName();
         return ((p + c).equals("FCA_SAP_Generic_LoopCUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_LDGRP_US"));
     }
-    public Set<String> getTotalOpenItemsSet()
-    {
-        return totalOpenItemsSet;
-    }
-    public Set<String> getTotalCollectedSet()
-    {
-        return totalCollectedSet;
-    }
-    public Set<String> getItemsClearedSet()
-    {
-        return itemsClearedSet;
-    }
-    public Set<String> getErrorsSet()
-    {
-        return errorsSet;
-    }
-    public DateTimeZone getRunStartDate()
-    {
-        return context.getRunStartDate();
-    }
-    public DateTimeZone getRunEndDate()
-    {
-        return context.getRunEndDate();
-    }
     public String getStatus()
     {
         return context.getStatus();
@@ -142,10 +112,6 @@ class AccountItemAutoLedger
     public String getName()
     {
         return context.getName();
-    }
-    public Long getId()
-    {
-        return context.getId();
     }
     public Long getClearId()
     {
