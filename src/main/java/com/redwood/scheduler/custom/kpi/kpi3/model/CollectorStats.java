@@ -55,6 +55,17 @@ public class CollectorStats
         errors += result.errors();
     }
 
+    public void add(CollectorStats other)
+    {
+        ruleSet1 += other.getRuleSet1();
+        autoClear += other.getAutoClear();
+        suggestedClear += other.getSuggestedClear();
+        totalCollected += other.getTotalCollected();
+        totalOpenItems += other.getTotalOpenItems();
+        itemsCleared += other.getItemsCleared();
+        errors += other.getErrors();
+    }
+
     public void setTotalOpenItems(int totalOpenItems) {
         this.totalOpenItems = totalOpenItems;
     }

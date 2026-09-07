@@ -5,6 +5,7 @@ import java.util.Set;
 public record CollectorConfig(
         Set<String> baseParents,
         Set<String> dtParents,
-        boolean collectRtx)
+        boolean collectRtx,
+        boolean restrictDtParents)
 {
 }

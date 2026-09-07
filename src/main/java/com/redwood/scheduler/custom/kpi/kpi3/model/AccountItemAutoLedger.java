@@ -5,68 +5,24 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
 
 import java.io.PrintWriter;
+import java.util.Set;
 
 class AccountItemAutoLedger implements AccountItemSource
 {
 
-    private Long clearId = -1L;
-    private Long prepId;
-    private int totalOpenItems = 0;
-    private int itemsCleared = 0;
-    private int ruleSet1 = 0;
-    private int autoClear = 0;
-    private int errors = 0;
-    private int suggestedClear = 0;
-    private int totalCollected = 0;
+    private static final Set<String> LEDGER_PATHS = Set.of("FCA_SAP_Generic_LoopCUS_SPD_BSC_AUTOCLEAR_SHERPAX_LDGRP", "FCA_SAP_Generic_LoopCUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_LDGRP_US");
 
     private final AccountItemContext context;
+    private final CollectorStats stats;
 
 
     public AccountItemAutoLedger(Job job,DateTimeZone parentDate)
             throws Exception
     {
         this.context = new AccountItemContext(job, parentDate);
+        this.stats = new CollectorStats();
     }
 
-    private void addLedger(Ledger l,PrintWriter p)
-    {
-        ruleSet1 += l.getStats().getRuleSet1();
-        autoClear += l.getStats().getAutoClear();
-        suggestedClear += l.getStats().getSuggestedClear();
-        totalCollected += l.getStats().getTotalCollected();
-        totalOpenItems += l.getStats().getTotalOpenItems();
-        itemsCleared += l.getStats().getItemsCleared();
-        errors += l.getStats().getErrors();
-    }
-
-    public int getRuleSet1()
-    {
-        return ruleSet1;
-    }
-    public int getAutoClear()
-    {
-        return autoClear;
-    }
-    public int getSuggestedClear()
-    {
-        return suggestedClear;
-    }
-    public int getItemsCleared()
-    {
-        return itemsCleared;
-    }
-    public int getTotalOpenItems()
-    {
-        return totalOpenItems;
-    }
-    public int getTotalCollected()
-    {
-        return totalCollected;
-    }
-    public int getErrors()
-    {
-        return errors;
-    }
     public void collectChildren(SchedulerSession session,PrintWriter p,Job job)
             throws Exception
     {
@@ -77,60 +33,38 @@ class AccountItemAutoLedger implements AccountItemSource
     {
         for(Job child: parent.getChildJobs())
         {
-            if(relevantJob(parent,child))
+
+            if (isLedgerCollector(parent, child))
             {
-                Ledger l = new Ledger(child,context.getParentDate());
-                l.collectChildren(session,p,job);
-                addLedger(l,p);
+                Ledger ledger = new Ledger(child, context.getParentDate());
+                ledger.collectChildren(session, p, job);
+                stats.add(ledger.getStats());
             }
-            else if(relevantJob2(parent,child))
-            {
-                Ledger l = new Ledger(child,context.getParentDate());
-                l.collectChildren(session,p,job);
-                addLedger(l,p);
-            }
+
             scan(session,child,p,job);
         }
     }
-    boolean relevantJob(Job parent,Job child)
+
+
+    private boolean isLedgerCollector(Job parent, Job child)
     {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        return ((p + c).equals("FCA_SAP_Generic_LoopCUS_SPD_BSC_AUTOCLEAR_SHERPAX_LDGRP"));
+        String key =
+        parent.getJobDefinition().getMasterJobDefinition().getName() +
+        child.getJobDefinition().getMasterJobDefinition().getName();
+
+        return LEDGER_PATHS.contains(key);
+
     }
 
-    boolean relevantJob2(Job parent,Job child)
+    @Override
+    public AccountItemContext getContext()
     {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        return ((p + c).equals("FCA_SAP_Generic_LoopCUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_LDGRP_US"));
-    }
-    public String getStatus()
-    {
-        return context.getStatus();
-    }
-    public String getName()
-    {
-        return context.getName();
-    }
-    public Long getClearId()
-    {
-        return clearId;
-    }
-    public Long getPrepId()
-    {
-        return prepId;
-    }
-    public String getAccountGroup()
-    {
-        return context.getAccountGroup();
-    }
-    public String getCompanyCode()
-    {
-        return context.getCompanyCode();
-    }
-
-    public AccountItemContext getContext() {
         return context;
+    }
+
+    @Override
+    public CollectorStats getStats()
+    {
+        return stats;
     }
 }

@@ -21,6 +21,7 @@ public class AutoClearing {
     private int suggestedClear = 0;
     private Job j;
 
+
     private static final List<AutoRule> RULES = List.of(
 
             new ExactMatchRule(
@@ -106,6 +107,8 @@ public class AutoClearing {
             Job job)
             throws Exception
     {
+        p.println("AUTO RULE -> " + rule.type() + " child=" + child.getJobDefinition().getMasterJobDefinition().getName());
+
         switch (rule.type())
         {
             case AUTO:
@@ -150,11 +153,11 @@ public class AutoClearing {
 
 
     private void addAi(AccountItemAuto ai, PrintWriter p) {
-        totalOpenItems += ai.getTotalOpenItems();
-        autoClear += ai.getAutoClear();
-        suggestedClear += ai.getSuggestedClear();
-        itemsCleared += ai.getItemsCleared();
-        selectedForClear += ai.getTotalCollected();
-        errors += ai.getErrors();
+        totalOpenItems += ai.getCollector().getStats().getTotalOpenItems();
+        autoClear += ai.getCollector().getStats().getAutoClear();
+        suggestedClear += ai.getCollector().getStats().getSuggestedClear();
+        itemsCleared += ai.getCollector().getStats().getItemsCleared();
+        selectedForClear += ai.getCollector().getStats().getTotalCollected();
+        errors += ai.getCollector().getStats().getErrors();
     }
 }

@@ -28,6 +28,17 @@ class LeafCollector
         this.stats = new CollectorStats();
     }
 
+    public LeafCollector(
+            AccountItemContext context,
+            CollectorStats stats) {
+
+        this.context = context;
+        this.stats = stats;
+        this.fileWriter = null;
+        this.clearingProcessor = null;
+        this.config = null;
+    }
+
     public void collectChildren(SchedulerSession session, PrintWriter p, Job job)
             throws Exception
     {
@@ -41,18 +52,18 @@ class LeafCollector
         for(Job child: parent.getChildJobs())
         {
             String c = child.getJobDefinition().getMasterJobDefinition().getName();
-            if(config.baseParents().contains(p)&&(c).contains("BaseWorking"))
+            if(config.baseParents().contains(p) && (c).contains("BaseWorking"))
             {
                 DataTransformer tot = new DataTransformer(session,child,true,pw,job, context.getCompanyCode(), context.getAccountGroup(), "auto",context.getParentDate());
                 stats.setTotalOpenItems(tot.getRuleSet1());
 
             }
-            else if(config.dtParents().contains(p) && c.startsWith("CUS_DT"))
+            if((!config.restrictDtParents() && c.startsWith("CUS_DT")) || (config.restrictDtParents() && config.dtParents().contains(p) && c.startsWith("CUS_DT")))
             {
                 DataTransformer dt = new DataTransformer(session,child,false,pw,job,context.getCompanyCode(), context.getAccountGroup(),"auto",context.getParentDate());
                 stats.addDt(dt);
             }
-            else if(c.equals("CUS_TRN_COLLECT_RTX"))
+            else if(c.equals("CUS_TRN_COLLECT_RTX") && config.collectRtx())
             {
                 DataTransformer dt = new DataTransformer(session,child,false,pw,job,context.getCompanyCode(), context.getAccountGroup(),"auto",context.getParentDate());
                 stats.setTotalCollectedItems(dt.getTotalCollected());
