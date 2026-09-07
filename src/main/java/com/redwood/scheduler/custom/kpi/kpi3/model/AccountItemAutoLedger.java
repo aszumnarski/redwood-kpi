@@ -36,9 +36,9 @@ class AccountItemAutoLedger implements AccountItemSource
 
             if (isLedgerCollector(parent, child))
             {
-                Ledger ledger = new Ledger(child, context.getParentDate());
-                ledger.collectChildren(session, p, job);
-                stats.add(ledger.getStats());
+                LeafCollector collector = new LeafCollector(child, context.getParentDate(), CollectorConfigs.LEDGER);
+                collector.collectChildren(session, p, job);
+                stats.add(collector.getStats());
             }
 
             scan(session,child,p,job);

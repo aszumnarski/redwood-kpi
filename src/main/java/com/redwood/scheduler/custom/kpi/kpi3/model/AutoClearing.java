@@ -12,13 +12,8 @@ import java.io.PrintWriter;
 import java.util.List;
 
 public class AutoClearing {
+    private final CollectorStats stats = new CollectorStats();
     private DateTimeZone runStartDate;
-    private int totalOpenItems = 0;
-    private int selectedForClear = 0;
-    private int itemsCleared = 0;
-    private int errors = 0;
-    private int autoClear = 0;
-    private int suggestedClear = 0;
     private Job j;
 
 
@@ -109,32 +104,10 @@ public class AutoClearing {
     {
         p.println("AUTO RULE -> " + rule.type() + " child=" + child.getJobDefinition().getMasterJobDefinition().getName());
 
-        switch (rule.type())
-        {
-            case AUTO:
-            {
-                AccountItemAuto ai = new AccountItemAuto(child, runStartDate);
-                ai.collectChildren(session, p, job);
-                addAi(ai, p);
-                break;
-            }
+        AccountItemSource source = createSource(rule.type(), child);
+        source.collectChildren(session, p, job);
 
-            case AUTO_OLD:
-            {
-                AccountItemAutoOld aio = new AccountItemAutoOld(child, runStartDate);
-                aio.collectChildren(session, p, job);
-                addAi(new AccountItemAuto(aio), p);
-                break;
-            }
-
-            case AUTO_LEDGER:
-            {
-                AccountItemAutoLedger ail = new AccountItemAutoLedger(child, runStartDate);
-                ail.collectChildren(session, p, job);
-                addAi(new AccountItemAuto(ail), p);
-                break;
-            }
-        }
+        stats.add(source.getStats());
     }
 
     private AutoRule findRule(Job parent, Job child)
@@ -150,14 +123,14 @@ public class AutoClearing {
         return null;
     }
 
-
-
-    private void addAi(AccountItemAuto ai, PrintWriter p) {
-        totalOpenItems += ai.getCollector().getStats().getTotalOpenItems();
-        autoClear += ai.getCollector().getStats().getAutoClear();
-        suggestedClear += ai.getCollector().getStats().getSuggestedClear();
-        itemsCleared += ai.getCollector().getStats().getItemsCleared();
-        selectedForClear += ai.getCollector().getStats().getTotalCollected();
-        errors += ai.getCollector().getStats().getErrors();
+    private AccountItemSource createSource(AccountItemType type, Job child) throws Exception
+    {
+        return switch(type)
+        {
+            case AUTO -> new LeafCollector(child, runStartDate, CollectorConfigs.AUTO);
+            case AUTO_OLD -> new LeafCollector(child, runStartDate, CollectorConfigs.AUTO_OLD);
+            case AUTO_LEDGER -> new AccountItemAutoLedger(child, runStartDate);
+        };
     }
+
 }

@@ -8,7 +8,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
 
 import java.io.PrintWriter;
 
-class LeafCollector
+class LeafCollector implements AccountItemSource
 {
     private final AccountItemContext context;
     private final ResultFileWriter fileWriter;
@@ -26,17 +26,6 @@ class LeafCollector
         this.clearingProcessor = new ClearingResultProcessor(fileWriter);
         this.config = config;
         this.stats = new CollectorStats();
-    }
-
-    public LeafCollector(
-            AccountItemContext context,
-            CollectorStats stats) {
-
-        this.context = context;
-        this.stats = stats;
-        this.fileWriter = null;
-        this.clearingProcessor = null;
-        this.config = null;
     }
 
     public void collectChildren(SchedulerSession session, PrintWriter p, Job job)
