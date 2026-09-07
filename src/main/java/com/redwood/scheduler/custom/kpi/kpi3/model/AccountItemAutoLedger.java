@@ -30,13 +30,13 @@ class AccountItemAutoLedger implements AccountItemSource
 
     private void addLedger(Ledger l,PrintWriter p)
     {
-        ruleSet1 += l.getRuleSet1();
-        autoClear += l.getAutoClear();
-        suggestedClear += l.getSuggestedClear();
-        totalCollected += l.getTotalCollected();
-        totalOpenItems += l.getTotalOpenItems();
-        itemsCleared += l.getItemsCleared();
-        errors += l.getErrors();
+        ruleSet1 += l.getStats().getRuleSet1();
+        autoClear += l.getStats().getAutoClear();
+        suggestedClear += l.getStats().getSuggestedClear();
+        totalCollected += l.getStats().getTotalCollected();
+        totalOpenItems += l.getStats().getTotalOpenItems();
+        itemsCleared += l.getStats().getItemsCleared();
+        errors += l.getStats().getErrors();
     }
 
     public int getRuleSet1()
