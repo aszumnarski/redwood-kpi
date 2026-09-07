@@ -19,74 +19,38 @@ import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
 
 class DataTransformer
 {
-    private DateTimeZone runStartDate;
-    private DateTimeZone runEndDate;
-    private DateTimeZone parentDate;
-    private String status;
-    private String name;
+    private final AccountItemContext context;
+
     private Long id;
     private int ruleSet1;
     private int autoClear;
-    private Set<String> autoClearSet;
     private int suggestedClear;
-    private Set<String> suggestedClearSet;
     private int totalCollected;
-    private Set<String> totalCollectedSet;
-    private Job j;
     private int skippedCount = 0;
     private String companyCode;
     private String accountGroup;
     private String type;
 
-    public DataTransformer(SchedulerSession session,Job j,boolean collectRuleSet1,PrintWriter p,Job job, String companyCode, String accountGroup, String type, DateTimeZone parentDate)
+    public DataTransformer(SchedulerSession session, Job j, boolean collectRuleSet1, PrintWriter p, Job job, String companyCode, String accountGroup, String type, DateTimeZone parentDate)
             throws Exception
     {
-        this.parentDate = parentDate;
-        this.j = j;
-        this.companyCode = companyCode;
-        this.accountGroup = accountGroup;
-        this.type = type;
-        id = j.getJobId();
-        p.println("DataTransformer created - " + id);
-        runStartDate = j.getRunStart();
-        runEndDate = j.getRunEnd();
-        status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getMasterJobDefinition().getName();
-        if(!status.equals("Completed"))
-        {
-            ruleSet1 = 0;
-            autoClear = 0;
-            suggestedClear = 0;
-            totalCollected = 0;
-        }
-        else
-        {
-            ruleSet1 = j.getJobParameterByName("RuleSet1RowCount") != null ? j.getJobParameterByName("RuleSet1RowCount").getOutValueNumber().intValue() : 0;
-            if(collectRuleSet1) printRuleSet1Items(session,j,p,job);
-            autoClear = j.getJobParameterByName("AutoClearRowCount") != null ? j.getJobParameterByName("AutoClearRowCount").getOutValueNumber().intValue() : 0;
-            if(autoClear != 0) printAutoClearItems(session,j,p,job);
-            suggestedClear = j.getJobParameterByName("SuggestedClearRowCount") != null ? j.getJobParameterByName("SuggestedClearRowCount").getOutValueNumber().intValue() : 0;
-            if(suggestedClear != 0) printSuggestedClearItems(session,j,p,job);
-            totalCollected = j.getJobParameterByName("OUT_ROWCOUNT") != null ? j.getJobParameterByName("OUT_ROWCOUNT").getOutValueNumber().intValue() : 0;
-            if(totalCollected != 0 && !collectRuleSet1) printOpenItems(session,j,p,job);
-            if(j.getJobParameterByName("SuggestedClearRowCount") == null) suggestedClear = totalCollected;
-        }
+        this(session, j, collectRuleSet1, p, job, companyCode, accountGroup, type, parentDate, false);
+    }
+    public DataTransformer(SchedulerSession session, Job j, boolean collectRuleSet1, PrintWriter p, Job job, AccountItemContext context, String type, boolean suggestedClearFlag) throws Exception {
+        this(session, j, collectRuleSet1, p, job, context.getCompanyCode(), context.getAccountGroup(), type, context.getParentDate(), false);
     }
     public DataTransformer(SchedulerSession session,Job j,boolean collectRuleSet1,PrintWriter p,Job job, String companyCode, String accountGroup, String type, DateTimeZone parentDate, boolean suggestedClearFlag)
             throws Exception
     {
-        this.parentDate = parentDate;
-        this.j = j;
+        context = new AccountItemContext(j,parentDate);
+
         this.companyCode = companyCode;
         this.accountGroup = accountGroup;
         this.type = type;
         id = j.getJobId();
         p.println("DataTransformer created - " + id);
-        runStartDate = j.getRunStart();
-        runEndDate = j.getRunEnd();
-        status = j.getStatus().getTranslationEN();
-        name = j.getJobDefinition().getMasterJobDefinition().getName();
-        if(!status.equals("Completed"))
+
+        if(!context.getStatus().equals("Completed"))
         {
             ruleSet1 = 0;
             autoClear = 0;
@@ -184,7 +148,7 @@ class DataTransformer
         if(!jobStatus.equals("Completed")) return;
         if(j.getJobParameterByName(parameter) == null) return;
         if(j.getJobParameterByName(parameter).getOutValueTableParameter() == null) return;
-        String fileName = getFileName(new FileKey(parentDate,companyCode,accountGroup,type,name));
+        String fileName = getFileName(new FileKey(context.getParentDate(),companyCode,accountGroup,type,name));
         boolean append = true;
         JobFile jf = job.getJobFileByName(fileName);
         if(jf == null)
@@ -216,7 +180,7 @@ class DataTransformer
         if(!jobStatus.equals("Completed")) return;
         if(j.getJobParameterByName(parameter) == null) return;
         if(j.getJobParameterByName(parameter).getOutValueTableParameter() == null) return;
-        String fileName = getFileName(new FileKey(parentDate,companyCode,accountGroup,type,name));
+        String fileName = getFileName(new FileKey(context.getParentDate(),companyCode,accountGroup,type,name));
         boolean append = true;
         JobFile jf = job.getJobFileByName(fileName);
         if(jf == null)
@@ -260,24 +224,7 @@ class DataTransformer
     }
     public Job getJob()
     {
-        return j;
+        return context.getJob();
     }
-    public Set<String> getTotalCollectedSet()
-    {
-        return totalCollectedSet;
-    }
-    public Set<String> getAutoClearSet()
-    {
-        return autoClearSet;
-    }
-    public Set<String> getSuggestedClearSet()
-    {
-        return suggestedClearSet;
-    }
-    public void clearSets()
-    {
-        autoClearSet = null;
-        suggestedClearSet = null;
-        totalCollectedSet = null;
-    }
+
 }
