@@ -33,7 +33,7 @@ public class ClearingResultProcessor
 
         String errorLines = getParameter(clearingJob, "OUT_DATA_ERROR_RTX");
 
-        Map<String, List<String>> matchings = RTXService.getMatchingRtx(clearingJob, "BELNR", "BUZEI", "StartNewTransaction");
+        Map<String, List<String>> matchings = RTXService.groupByKey(clearingJob, "IN_DATA_RTX","BELNR", "BUZEI", "StartNewTransaction");
 
         if (errorLines == null)
         {

@@ -38,6 +38,12 @@ public class ParentDifferentChildRule implements Rule
             case AUTO -> new LeafCollector(childJob, runStartDate, CollectorConfigs.AUTO);
             case AUTO_OLD -> new LeafCollector(childJob, runStartDate, CollectorConfigs.AUTO_OLD);
             case AUTO_LEDGER -> new AccountItemAutoLedger(childJob, runStartDate);
+            case GL -> null;
+            case LEDGER -> null;
+            case CONDITIONAL -> null;
+            case CONDITIONAL_GL -> null;
+            case SUGGESTED_DIV -> null;
+            case SUGGESTED_AI -> null;
         };
     }
 }

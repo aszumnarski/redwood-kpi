@@ -32,13 +32,11 @@ public class ConditionalClearingSuggestion {
         this.stats = new CollectorStats();
     }
 
-    public void collectActionItems(SchedulerSession session, PrintWriter p, Job job)
-            throws Exception {
+    public void collectActionItems(SchedulerSession session, PrintWriter p, Job job) throws Exception {
         scan(session, j, p, job);
     }
 
-    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job job)
-            throws Exception {
+    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job job) throws Exception {
         for (Job child : parent.getChildJobs()) {
 
             Rule rule = findRule(parent, child);
@@ -65,21 +63,10 @@ public class ConditionalClearingSuggestion {
         return null;
     }
 
-    private void processRule(
-            Rule rule,
-            Job child,
-            SchedulerSession session,
-            PrintWriter p,
-            Job job)
-            throws Exception
+    private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job job) throws Exception
     {
-        AccountItemSource source =
-                rule.createSource(
-                        child,
-                        j.getRunStart());
-
+        AccountItemSource source = rule.createSource(child, j.getRunStart());
         source.collectChildren(session, p, job);
-
         stats.add(source.getStats());
     }
 

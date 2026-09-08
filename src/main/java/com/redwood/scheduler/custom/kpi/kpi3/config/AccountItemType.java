@@ -8,5 +8,7 @@ public enum AccountItemType
     GL,
     LEDGER,
     CONDITIONAL,
-    CONDITIONAL_GL
+    CONDITIONAL_GL,
+    SUGGESTED_DIV,
+    SUGGESTED_AI
 }

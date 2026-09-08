@@ -40,6 +40,8 @@ public class ExactMatchRule implements Rule
             case GL -> new LeafCollector(childJob, runStartDate, CollectorConfigs.GL);
             case CONDITIONAL -> new LeafCollector(childJob, runStartDate, CollectorConfigs.CONDITIONAL);
             case CONDITIONAL_GL -> new AccountItemGL(childJob, runStartDate);
+            case SUGGESTED_DIV ->  new SuggestedClearingDIV(childJob,runStartDate);
+            case SUGGESTED_AI -> new AccountItemSuggested(childJob,runStartDate);
         };
     }
 

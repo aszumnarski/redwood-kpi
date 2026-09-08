@@ -9,9 +9,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.model.WriteResult;
 import com.redwood.scheduler.custom.kpi.kpi3.service.RTXService;
 
 import java.io.FileOutputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec.getFileName;
 import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
@@ -30,20 +28,10 @@ public class ResultFileWriter
         this.type = type;
     }
 
-    public int writeItemsToFile(SchedulerSession session, Job job, String resultType, Map<String, List<String>> itemsMap)
-            throws Exception
+    public int writeItemsToFile(SchedulerSession session, Job job, String resultType, Collection<String> items) throws Exception
     {
-        String fileName =
-                getFileName(
-                        new FileKey(
-                                context.getParentDate(),
-                                context.getCompanyCode(),
-                                context.getAccountGroup(),
-                                type,
-                                resultType));
-
+        String fileName = getFileName(new FileKey(context.getParentDate(), context.getCompanyCode(), context.getAccountGroup(), type, resultType));
         boolean append = true;
-
         JobFile jobFile = job.getJobFileByName(fileName);
 
         if (jobFile == null)
@@ -54,27 +42,35 @@ public class ResultFileWriter
 
         int count = 0;
 
-        try (FileOutputStream out =
-                     new FileOutputStream(jobFile.getFileName(), append))
+        try (FileOutputStream out = new FileOutputStream(jobFile.getFileName(), append))
         {
-            for (List<String> items : itemsMap.values())
+            for (String item : items)
             {
-                count += items.size();
-
-                for (String item : items)
-                {
-                    write(out, item);
-                }
+                write(out, item);
+                count++;
             }
         }
 
         return count;
     }
 
+    public int writeItemsToFile(SchedulerSession session, Job job, String resultType, Map<String, List<String>> itemsMap)
+            throws Exception
+    {
+        List<String> items = new ArrayList<>();
+
+        for (List<String> values : itemsMap.values())
+        {
+            items.addAll(values);
+        }
+
+        return writeItemsToFile(session, job, resultType, items);
+    }
+
     public WriteResult writeErrorsAndClearedSeparately(SchedulerSession session, Job child, Job job,Map<String, List<String>> matchings)
             throws Exception
     {
-        List<String> errorsList = RTXService.getErrorsRtx(child,"StartNewTransaction");
+        List<String> errorsList = RTXService.getErrorsRtx(child,"OUT_DATA_ERROR_RTX","StartNewTransaction");
         Map<String, List<String>> errorsMap = new HashMap<>();
         Map<String, List<String>> clearedMap = new HashMap<>(matchings);
         for (String error : errorsList)

@@ -95,13 +95,7 @@ public class AutoClearing {
         }
     }
 
-    private void processRule(
-            Rule rule,
-            Job child,
-            SchedulerSession session,
-            PrintWriter p,
-            Job job)
-            throws Exception
+    private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job job) throws Exception
     {
 
         AccountItemSource source = rule.createSource(child,runStartDate);
