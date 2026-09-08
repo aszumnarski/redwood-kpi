@@ -20,14 +20,14 @@ import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
 public class ResultFileWriter
 {
     private final AccountItemContext context;
-    private final String clearingType;
+    private final String type;
 
     public ResultFileWriter(
             AccountItemContext context,
-            String clearingType)
+            String type)
     {
         this.context = context;
-        this.clearingType = clearingType;
+        this.type = type;
     }
 
     public int writeItemsToFile(SchedulerSession session, Job job, String resultType, Map<String, List<String>> itemsMap)
@@ -39,7 +39,7 @@ public class ResultFileWriter
                                 context.getParentDate(),
                                 context.getCompanyCode(),
                                 context.getAccountGroup(),
-                                clearingType,
+                                type,
                                 resultType));
 
         boolean append = true;

@@ -1,8 +1,10 @@
 package com.redwood.scheduler.custom.kpi.kpi3.config;
 
+import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.model.Job;
+import com.redwood.scheduler.custom.kpi.kpi3.model.*;
 
-public class ExactMatchRule implements AutoRule
+public class ExactMatchRule implements Rule
 {
     private final String parent;
     private final String child;
@@ -24,8 +26,21 @@ public class ExactMatchRule implements AutoRule
     }
 
     @Override
-    public AccountItemType type()
+    public AccountItemSource createSource(
+            Job childJob,
+            DateTimeZone runStartDate)
+            throws Exception
     {
-        return type;
+        return switch(type)
+        {
+            case AUTO -> new LeafCollector(childJob, runStartDate, CollectorConfigs.AUTO);
+            case AUTO_OLD -> new LeafCollector(childJob, runStartDate, CollectorConfigs.AUTO_OLD);
+            case AUTO_LEDGER -> new AccountItemAutoLedger(childJob, runStartDate);
+            case LEDGER -> new LeafCollector(childJob, runStartDate, CollectorConfigs.LEDGER);
+            case GL -> new LeafCollector(childJob, runStartDate, CollectorConfigs.GL);
+            case CONDITIONAL -> new LeafCollector(childJob, runStartDate, CollectorConfigs.CONDITIONAL);
+            case CONDITIONAL_GL -> new AccountItemGL(childJob, runStartDate);
+        };
     }
+
 }

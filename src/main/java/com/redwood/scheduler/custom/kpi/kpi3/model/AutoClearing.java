@@ -4,7 +4,7 @@ import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.custom.kpi.kpi3.config.AccountItemType;
-import com.redwood.scheduler.custom.kpi.kpi3.config.AutoRule;
+import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ParentDifferentChildRule;
 
@@ -12,12 +12,12 @@ import java.io.PrintWriter;
 import java.util.List;
 
 public class AutoClearing {
-    private final CollectorStats stats = new CollectorStats();
+    private final CollectorStats stats;
     private DateTimeZone runStartDate;
-    private Job j;
+    private Job job;
 
 
-    private static final List<AutoRule> RULES = List.of(
+    private static final List<Rule> RULES = List.of(
 
             new ExactMatchRule(
                     "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_WEA",
@@ -69,21 +69,22 @@ public class AutoClearing {
 
     );
 
-    public AutoClearing(Job j) {
-        this.j = j;
-        runStartDate = j.getRunStart();
+    public AutoClearing(Job job) {
+        this.job = job;
+        runStartDate = job.getRunStart();
+        stats = new CollectorStats();
     }
 
     public void collectActionItems(SchedulerSession session, PrintWriter p, Job job)
             throws Exception {
-        scan(session, j, p, job);
+        scan(session, job, p, job);
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job job)
             throws Exception {
         for (Job child : parent.getChildJobs()) {
 
-            AutoRule rule = findRule(parent, child);
+            Rule rule = findRule(parent, child);
 
             if (rule != null)
             {
@@ -95,24 +96,23 @@ public class AutoClearing {
     }
 
     private void processRule(
-            AutoRule rule,
+            Rule rule,
             Job child,
             SchedulerSession session,
             PrintWriter p,
             Job job)
             throws Exception
     {
-        p.println("AUTO RULE -> " + rule.type() + " child=" + child.getJobDefinition().getMasterJobDefinition().getName());
 
-        AccountItemSource source = createSource(rule.type(), child);
+        AccountItemSource source = rule.createSource(child,runStartDate);
         source.collectChildren(session, p, job);
 
         stats.add(source.getStats());
     }
 
-    private AutoRule findRule(Job parent, Job child)
+    private Rule findRule(Job parent, Job child)
     {
-        for (AutoRule rule : RULES)
+        for (Rule rule : RULES)
         {
             if (rule.matches(parent, child))
             {
@@ -123,14 +123,5 @@ public class AutoClearing {
         return null;
     }
 
-    private AccountItemSource createSource(AccountItemType type, Job child) throws Exception
-    {
-        return switch(type)
-        {
-            case AUTO -> new LeafCollector(child, runStartDate, CollectorConfigs.AUTO);
-            case AUTO_OLD -> new LeafCollector(child, runStartDate, CollectorConfigs.AUTO_OLD);
-            case AUTO_LEDGER -> new AccountItemAutoLedger(child, runStartDate);
-        };
-    }
 
 }

@@ -3,14 +3,20 @@ package com.redwood.scheduler.custom.kpi.kpi3.model;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
+import com.redwood.scheduler.custom.kpi.kpi3.config.AccountItemType;
+import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
+import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
 
 import java.io.PrintWriter;
-import java.util.Set;
+import java.util.List;
 
-class AccountItemAutoLedger implements AccountItemSource
+public class AccountItemAutoLedger implements AccountItemSource
 {
 
-    private static final Set<String> LEDGER_PATHS = Set.of("FCA_SAP_Generic_LoopCUS_SPD_BSC_AUTOCLEAR_SHERPAX_LDGRP", "FCA_SAP_Generic_LoopCUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_LDGRP_US");
+    private static final List<Rule> RULES = List.of(
+            new ExactMatchRule("FCA_SAP_Generic_Loop", "CUS_SPD_BSC_AUTOCLEAR_SHERPAX_LDGRP", AccountItemType.LEDGER),
+            new ExactMatchRule("FCA_SAP_Generic_Loop", "CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_LDGRP_US", AccountItemType.LEDGER)
+    );
 
     private final AccountItemContext context;
     private final CollectorStats stats;
@@ -23,37 +29,43 @@ class AccountItemAutoLedger implements AccountItemSource
         this.stats = new CollectorStats();
     }
 
+    @Override
     public void collectChildren(SchedulerSession session,PrintWriter p,Job job)
             throws Exception
     {
         scan(session, context.getJob(), p,job);
     }
+
     private void scan(SchedulerSession session, Job parent, PrintWriter p,Job job)
             throws Exception
     {
         for(Job child: parent.getChildJobs())
         {
 
-            if (isLedgerCollector(parent, child))
+            Rule rule = findRule(parent, child);
+
+            if (rule != null)
             {
-                LeafCollector collector = new LeafCollector(child, context.getParentDate(), CollectorConfigs.LEDGER);
-                collector.collectChildren(session, p, job);
-                stats.add(collector.getStats());
+                AccountItemSource source = rule.createSource(child, context.getParentDate());
+                source.collectChildren(session, p, job);
+                stats.add(source.getStats());
             }
 
             scan(session,child,p,job);
         }
     }
 
-
-    private boolean isLedgerCollector(Job parent, Job child)
+    private Rule findRule(Job parent, Job child)
     {
-        String key =
-        parent.getJobDefinition().getMasterJobDefinition().getName() +
-        child.getJobDefinition().getMasterJobDefinition().getName();
+        for (Rule rule : RULES)
+        {
+            if (rule.matches(parent, child))
+            {
+                return rule;
+            }
+        }
 
-        return LEDGER_PATHS.contains(key);
-
+        return null;
     }
 
     @Override

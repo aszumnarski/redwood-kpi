@@ -9,10 +9,15 @@ public final class CollectorConfigs
     public static final Set<String> collectParentsAuto = Set.of("CUS_SPD_BSC_AUTOCLEAR_RULES_WEA_new","CUS_SPD_BSC_AUTOCLEAR_RULES_Sherpax_Global_new","CUS_SPD_BSC_AUTOCLEAR_RULES_Sherpax_Focus4_new","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_Phase4","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_SOFOM","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_US");
     public static final Set<String> baseParentsAuto = Set.of("CUS_TD_BSC_AUTOCLEAR_WEA","CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_Original","CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH","CUS_TD_BSC_AUTOCLEAR_SHERPAX_new","CUS_TD_BSC_AUTOCLEAR_Cashmatching_E1P_US");
     public static final Set<String> totalOpenItemsParentsOld = Set.of("CUS_TD_BSC_AUTOCLEAR_WEA","CUS_TD_BSC_AUTOCLEAR_CB_IN");
+    public static final Set<String> baseParentsGl = Set.of();
+    public static final Set<String> dtParentsGl = Set.of("CUS_SPD_BSC_SUGGESTEDCLEAR_RULES_WEA_new");
+    public static final Set<String> baseParentsConditional = Set.of();
+    public static final Set<String> dtParentsConditional = Set.of("CUS_SPD_BSC_SUGGESTEDCLEAR_RULES_WEA_new");
 
-    public static final CollectorConfig AUTO = new CollectorConfig(baseParentsAuto,collectParentsAuto,true,true);
 
-    public static final CollectorConfig AUTO_OLD = new CollectorConfig(totalOpenItemsParentsOld,Set.of(),false,false);
-
-    public static final CollectorConfig LEDGER = new CollectorConfig(baseParentsLedger,dtParentsLedger,true,true);
+    public static final CollectorConfig AUTO = new CollectorConfig("auto",baseParentsAuto,collectParentsAuto,true,true,false);
+    public static final CollectorConfig AUTO_OLD = new CollectorConfig("auto",totalOpenItemsParentsOld,Set.of(),false,false,false);
+    public static final CollectorConfig LEDGER = new CollectorConfig("auto",baseParentsLedger,dtParentsLedger,true,true,false);
+    public static final CollectorConfig GL = new CollectorConfig("conditional",baseParentsGl, dtParentsGl, true, true,true);
+    public static final CollectorConfig CONDITIONAL = new CollectorConfig("conditional",baseParentsConditional, dtParentsConditional, true, true, true );
 }

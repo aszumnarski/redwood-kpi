@@ -4,5 +4,9 @@ public enum AccountItemType
 {
     AUTO,
     AUTO_OLD,
-    AUTO_LEDGER
+    AUTO_LEDGER,
+    GL,
+    LEDGER,
+    CONDITIONAL,
+    CONDITIONAL_GL
 }

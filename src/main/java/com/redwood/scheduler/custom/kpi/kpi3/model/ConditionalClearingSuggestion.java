@@ -2,74 +2,85 @@ package com.redwood.scheduler.custom.kpi.kpi3.model;
 
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
+import com.redwood.scheduler.custom.kpi.kpi3.config.AccountItemType;
+import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
+import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
 
 import java.io.PrintWriter;
+import java.util.List;
 
-public class ConditionalClearingSuggestion
-{
-    private int totalOpenItems = 0;
-    private int autoClear = 0;
-    private int totalCollected = 0;
-    private int selectedForClear = 0;
-    private Job j;
+public class ConditionalClearingSuggestion {
 
-    public ConditionalClearingSuggestion(Job j)
-    {
+    private static final List<Rule> RULES = List.of(
+
+            new ExactMatchRule(
+                    "CUS_FCA_TD_BSC_AccountItemLoop_CONDITIONAL_AUTOCLEAR_REVIEW",
+                    "CUS_TD_BSC_CONDITIONAL_AUTOCLEAR_REVIEW",
+                    AccountItemType.CONDITIONAL),
+
+            new ExactMatchRule(
+                    "FCA_SAP_Generic_Loop",
+                    "CUS_TD_BSC_CONDITIONAL_AUTOCLEAR_REVIEW_WEA",
+                    AccountItemType.CONDITIONAL_GL)
+    );
+
+    private final CollectorStats stats;
+    private final Job j;
+
+    public ConditionalClearingSuggestion(Job j) {
         this.j = j;
-    }
-    private void addAi(AccountItem ai,PrintWriter p)
-    {
-        totalOpenItems += ai.getTotalOpenItems();
-        autoClear += ai.getAutoClear();
-        totalCollected += ai.getTotalCollected();
+        this.stats = new CollectorStats();
     }
 
-    private void addAi(AccountItemGL ai,PrintWriter p)
-    {
-        totalOpenItems += ai.getTotalOpenItems();
-        autoClear += ai.getAutoClear();
-        totalCollected += ai.getTotalCollected();
+    public void collectActionItems(SchedulerSession session, PrintWriter p, Job job)
+            throws Exception {
+        scan(session, j, p, job);
     }
 
-    public void collectActionItems(SchedulerSession session,PrintWriter p,Job job)
-            throws Exception
-    {
-        scan(session,j,p,job);
-    }
-    private void scan(SchedulerSession session,Job parent,PrintWriter p,Job job)
-            throws Exception
-    {
-        for(Job child: parent.getChildJobs())
-        {
-            if(relevantJobA(parent,child))
+    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job job)
+            throws Exception {
+        for (Job child : parent.getChildJobs()) {
+
+            Rule rule = findRule(parent, child);
+
+            if (rule != null)
             {
-                p.println("Account Item - scan found A " + child.getJobId());
-                AccountItem ai = new AccountItem(child,j.getRunStart());
-                ai.collectChildren(session,p,job);
-                addAi(ai,p);
-                ai = null;
+                processRule(rule, child, session, p, job);
             }
-            if(relevantJobB(parent,child))
-            {
-                p.println("Account Item - scan found B " + child.getJobId());
-                AccountItemGL aigl = new AccountItemGL(child,j.getRunStart());
-                aigl.collectChildren(session,p,job);
-                addAi(aigl,p);
-                aigl = null;
-            }
-            scan(session,child,p,job);
+
+            scan(session, child, p, job);
         }
     }
-    boolean relevantJobA(Job parent,Job child)
+
+    private Rule findRule(Job parent, Job child)
     {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        return (p + c).equals("CUS_FCA_TD_BSC_AccountItemLoop_CONDITIONAL_AUTOCLEAR_REVIEWCUS_TD_BSC_CONDITIONAL_AUTOCLEAR_REVIEW");
+        for (Rule rule : RULES)
+        {
+            if (rule.matches(parent, child))
+            {
+                return rule;
+            }
+        }
+
+        return null;
     }
-    boolean relevantJobB(Job parent,Job child)
+
+    private void processRule(
+            Rule rule,
+            Job child,
+            SchedulerSession session,
+            PrintWriter p,
+            Job job)
+            throws Exception
     {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        return (p + c).equals("FCA_SAP_Generic_LoopCUS_TD_BSC_CONDITIONAL_AUTOCLEAR_REVIEW_WEA");
+        AccountItemSource source =
+                rule.createSource(
+                        child,
+                        j.getRunStart());
+
+        source.collectChildren(session, p, job);
+
+        stats.add(source.getStats());
     }
+
 }

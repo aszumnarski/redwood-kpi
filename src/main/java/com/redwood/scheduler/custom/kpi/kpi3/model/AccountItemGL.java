@@ -3,109 +3,76 @@ package com.redwood.scheduler.custom.kpi.kpi3.model;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
+import com.redwood.scheduler.custom.kpi.kpi3.config.AccountItemType;
+import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
+import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
 
 import java.io.PrintWriter;
+import java.util.List;
 
-
-class AccountItemGL
+public class AccountItemGL implements AccountItemSource
 {
-    private final AccountItemContext context;
-    private int ruleSet1 = 0;
-    private int autoClear = 0;
-    private int suggestedClear = 0;
 
-    private int totalCollected = 0;
-    private int totalOpenItems = 0;
+    private static final List<Rule> RULES = List.of(
+            new ExactMatchRule("FCA_SAP_Generic_Loop", "CUS_TD_BSC_CONDITIONAL_AUTOCLEAR_REVIEW_GL", AccountItemType.GL)
+    );
+
+    private final CollectorStats stats;
+    private final AccountItemContext context;
+
 
     public AccountItemGL(Job job,DateTimeZone parentDate)
             throws Exception
     {
         this.context = new AccountItemContext(job, parentDate);
+        this.stats = new CollectorStats();
     }
-    private void addGl(GL gl)
-    {
-        ruleSet1 += gl.getRuleSet1();
-        autoClear += gl.getAutoClear();
-        suggestedClear += gl.getSuggestedClear();
-        totalCollected += gl.getTotalCollected();
-        totalOpenItems += gl.getTotalOpenItems();
-    }
-    public DateTimeZone getRunStartDate()
-    {
-        return context.getRunStartDate();
-    }
-    public DateTimeZone getRunEndDate()
-    {
-        return context.getRunEndDate();
-    }
-    public String getStatus()
-    {
-        return context.getStatus();
-    }
-    public String getName()
-    {
-        return context.getName();
-    }
-    public Long getId()
-    {
-        return context.getId();
-    }
-    public String getAccountGroup()
-    {
-        return context.getAccountGroup();
-    }
-    public String getCompanyCode()
-    {
-        return context.getCompanyCode();
-    }
-    public int getRuleSet1()
-    {
-        return ruleSet1;
-    }
-    public int getAutoClear()
-    {
-        return autoClear;
-    }
-    public int getSuggestedClear()
-    {
-        return suggestedClear;
-    }
-    public int getTotalOpenItems()
-    {
-        return totalOpenItems;
-    }
-    public int getTotalCollected()
-    {
-        return totalCollected;
-    }
+
+    @Override
     public void collectChildren(SchedulerSession session,PrintWriter p, Job job)
             throws Exception
     {
         scan(session,context.getJob(),p,job);
     }
-    private void scan(SchedulerSession session,Job parent, PrintWriter p, Job job)
+
+    private void scan(SchedulerSession session, Job parent, PrintWriter p,Job job)
             throws Exception
     {
         for(Job child: parent.getChildJobs())
         {
-            if(relevantJob(parent,child))
+
+            Rule rule = findRule(parent, child);
+
+            if (rule != null)
             {
-                p.println("Account Item GL - scan found " + child.getJobId());
-                GL gl = new GL(child,context.getParentDate());
-                gl.collectChildren(session,p,job);
-                addGl(gl);
+                AccountItemSource source = rule.createSource(child, context.getParentDate());
+                source.collectChildren(session, p, job);
+                stats.add(source.getStats());
             }
+
             scan(session,child,p,job);
         }
     }
-    boolean relevantJob(Job parent,Job child)
+
+    private Rule findRule(Job parent, Job child)
     {
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
-        String c = child.getJobDefinition().getMasterJobDefinition().getName();
-        return ((p + c).equals("FCA_SAP_Generic_LoopCUS_TD_BSC_CONDITIONAL_AUTOCLEAR_REVIEW_GL"));
+        for (Rule rule : RULES)
+        {
+            if (rule.matches(parent, child))
+            {
+                return rule;
+            }
+        }
+
+        return null;
     }
 
     public AccountItemContext getContext() {
         return context;
+    }
+
+    @Override
+    public CollectorStats getStats() {
+        return stats;
     }
 }
