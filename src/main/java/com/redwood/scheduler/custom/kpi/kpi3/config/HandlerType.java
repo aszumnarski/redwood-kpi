@@ -29,10 +29,10 @@ public enum HandlerType
     AUTO
             {
                 @Override
-                public void handle(Job j, SchedulerSession session, PrintWriter p, Job parent)
+                public void handle(Job job, SchedulerSession session, PrintWriter p, Job extractorJob)
                         throws Exception
                 {
-                    new AutoClearing(j).collectActionItems(session, p, parent);
+                    new AutoClearing(job).collectActionItems(session, p, extractorJob);
                 }
             },
     RECON

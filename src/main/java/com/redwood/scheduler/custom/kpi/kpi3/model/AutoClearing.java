@@ -75,41 +75,46 @@ public class AutoClearing {
         stats = new CollectorStats();
     }
 
-    public void collectActionItems(SchedulerSession session, PrintWriter p, Job job)
+    public void collectActionItems(SchedulerSession session, PrintWriter p, Job extractorJob)
             throws Exception {
-        scan(session, job, p, job);
+        scan(session, job, p, extractorJob);
     }
 
-    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job job)
+    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob)
             throws Exception {
         for (Job child : parent.getChildJobs()) {
 
-            Rule rule = findRule(parent, child);
+            p.println("SCAN: " + parent + " -> " + child);
+            Rule rule = findRule(parent, child,p);
 
             if (rule != null)
             {
-                processRule(rule, child, session, p, job);
+                processRule(rule, child, session, p, extractorJob);
             }
 
-            scan(session, child, p, job);
+            scan(session, child, p, extractorJob);
         }
     }
 
-    private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job job) throws Exception
+    private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job extractorJob) throws Exception
     {
 
         AccountItemSource source = rule.createSource(child,runStartDate);
-        source.collectChildren(session, p, job);
+        source.collectChildren(session, p, extractorJob);
 
         stats.add(source.getStats());
     }
 
-    private Rule findRule(Job parent, Job child)
+    private Rule findRule(Job parent, Job child,PrintWriter p)
     {
         for (Rule rule : RULES)
         {
-            if (rule.matches(parent, child))
+            boolean match = rule.matches(parent, child);
+
+            p.println("RULE: " + rule + " => " + match);
+            if (match)
             {
+                p.println("MATCHED RULE: " + rule);
                 return rule;
             }
         }

@@ -5,8 +5,6 @@ import com.redwood.scheduler.api.model.JobFile;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemContext;
 import com.redwood.scheduler.custom.kpi.kpi3.model.FileKey;
-import com.redwood.scheduler.custom.kpi.kpi3.model.WriteResult;
-import com.redwood.scheduler.custom.kpi.kpi3.service.RTXService;
 
 import java.io.FileOutputStream;
 import java.util.*;
@@ -65,23 +63,6 @@ public class ResultFileWriter
         }
 
         return writeItemsToFile(session, job, resultType, items);
-    }
-
-    public WriteResult writeErrorsAndClearedSeparately(SchedulerSession session, Job child, Job job,Map<String, List<String>> matchings)
-            throws Exception
-    {
-        List<String> errorsList = RTXService.getErrorsRtx(child,"OUT_DATA_ERROR_RTX","StartNewTransaction");
-        Map<String, List<String>> errorsMap = new HashMap<>();
-        Map<String, List<String>> clearedMap = new HashMap<>(matchings);
-        for (String error : errorsList)
-        {
-            errorsMap.put(error, matchings.get(error));
-            clearedMap.remove(error);
-        }
-        int errors = writeItemsToFile(session,job,"errors", errorsMap);
-        int cleared = writeItemsToFile(session,job,"cleared", clearedMap);
-
-        return new WriteResult(cleared,errors);
     }
 
 }

@@ -16,7 +16,7 @@ import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
 
 public class Processor
 {
-    public void processNoSum(Iterable<WorkItem> items, SchedulerSession session, Job parentJob, PrintWriter p)
+    public void processNoSum(Iterable<WorkItem> items, SchedulerSession session, Job extractorJob, PrintWriter p)
             throws Exception
     {
         int counter = 1;
@@ -25,7 +25,7 @@ public class Processor
         for (WorkItem item : items)
         {
             DateTimeZone dtz1 = new DateTimeZone();
-            processWorkItem(item, session, parentJob, p);
+            processWorkItem(item, session, extractorJob, p);
             DateTimeZone dtz2 = new DateTimeZone();
             long elapsedSec = (dtz2.getUTCMilliSecs() - dtz1.getUTCMilliSecs()) / 1000;
             p.println("Loop " + counter + (total > 0 ? " of " + total : "") + ": " + item.getType() + " - " + item.getBukrs() + " - accountGroup=" + item.getAccountGroup() + " (" + item.getJob().getJobId() + ") processed in " + elapsedSec + " seconds.");
@@ -33,19 +33,21 @@ public class Processor
         }
     }
 
-    private void processWorkItem(WorkItem item, SchedulerSession session, Job parentJob,PrintWriter p)
+    private void processWorkItem(WorkItem item, SchedulerSession session, Job extractorJob,PrintWriter p)
             throws Exception
     {
         String definitionName = item.getJob().getJobDefinition().getMasterJobDefinition().getName();
+        p.println("Processor.processWorkItem: definitionName" + definitionName);
         JobDefinitionRegistry definition = JobDefinitionRegistry.fromName(definitionName);
 
         if (definition == null)
         {
-            writeMissingChain(definitionName, session, parentJob);
+            p.println("Processor.processWorkItem: definition not found!");
+            writeMissingChain(definitionName, session, extractorJob);
             return;
         }
-
-        definition.handler.handle(item.getJob(), session, p, parentJob);
+        p.println("Processor.processWorkItem: definition found, processing using handler " + definition.handler.name() + " ...");
+        definition.handler.handle(item.getJob(), session, p, extractorJob);
 
     }
 

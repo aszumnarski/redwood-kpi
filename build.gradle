@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'com.redwood.scheduler.custom.kpi'
-version = '1.0.8'
+version = '1.0.10'
 
 repositories {
     mavenCentral()

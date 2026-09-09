@@ -31,7 +31,7 @@ public class ConditionalClearingRequest {
         this.context = new AccountItemContext(j, j.getRunStart());
         this.stats = new CollectorStats();
         this.fileWriter = new ResultFileWriter(context, "conditional");
-        this.resultProcessor = new ClearingResultProcessor(fileWriter);
+        this.resultProcessor = new ClearingResultProcessor(fileWriter, RTXSchemas.CONDITIONAL);
         suggestionId = getLink(j);
 
     }
@@ -55,7 +55,7 @@ public class ConditionalClearingRequest {
     }
 
     private void processFb05(SchedulerSession session, Job child, PrintWriter p, Job job) throws Exception {
-        ClearingResult result = resultProcessor.process(session, child, job, selectedForClear);
+        ClearingResult result = resultProcessor.process(session, child, job, selectedForClear,p);
         stats.apply(result);
     }
 
@@ -90,7 +90,7 @@ public class ConditionalClearingRequest {
     private void printSet(SchedulerSession session, Job j, String parameter, PrintWriter p, Job job, String name) throws Exception {
         if (!"Completed".equals(j.getStatus().getTranslationEN())) return;
 
-        fileWriter.writeItemsToFile(session,job,name,RTXService.getDocumentKeys(j,parameter,"DocumentNo", "Doc.Item", "FiscalYear"));
+        fileWriter.writeItemsToFile(session,job,name,RTXService.getDocumentKeys(j,parameter,RTXSchemas.CONDITIONAL));
 
     }
 
@@ -98,7 +98,8 @@ public class ConditionalClearingRequest {
         String inExcel = getParameter(j, "IN_FILE_FROM_EP");
 
         if (inExcel == null) {
-            throw new RuntimeException("Missing IN_FILE_FROM_EP parameter for job " + j.getJobId() + " (" + j.getJobDefinition().getMasterJobDefinition().getName() + ")");
+            return -1L;
+            //throw new RuntimeException("Missing IN_FILE_FROM_EP parameter for job " + j.getJobId() + " (" + j.getJobDefinition().getMasterJobDefinition().getName() + ")");
         }
 
         for (String part : inExcel.split("_", -1)) {

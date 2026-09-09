@@ -6,6 +6,7 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.rtx.RTXReader;
 import com.redwood.scheduler.api.rtx.RTXRow;
+import com.redwood.scheduler.custom.kpi.kpi3.service.RTXService;
 
 import java.util.Set;
 import java.util.HashSet;
@@ -17,8 +18,7 @@ import static com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec.getFileNam
 import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
 import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
 
-class DataTransformer
-{
+class DataTransformer {
     private final AccountItemContext context;
 
     private Long id;
@@ -31,18 +31,18 @@ class DataTransformer
     private String accountGroup;
     private String type;
 
-    public DataTransformer(SchedulerSession session, Job j, boolean collectRuleSet1, PrintWriter p, Job job, String companyCode, String accountGroup, String type, DateTimeZone parentDate)
-            throws Exception
-    {
-        this(session, j, collectRuleSet1, p, job, companyCode, accountGroup, type, parentDate, false);
+    public DataTransformer(SchedulerSession session, Job j, boolean collectRuleSet1, PrintWriter p, Job extractorJob, String companyCode, String accountGroup, String type, DateTimeZone parentDate)
+            throws Exception {
+        this(session, j, collectRuleSet1, p, extractorJob, companyCode, accountGroup, type, parentDate, false);
     }
-    public DataTransformer(SchedulerSession session, Job j, boolean collectRuleSet1, PrintWriter p, Job job, AccountItemContext context, String type, boolean suggestedClearFlag) throws Exception {
-        this(session, j, collectRuleSet1, p, job, context.getCompanyCode(), context.getAccountGroup(), type, context.getParentDate(), false);
+
+    public DataTransformer(SchedulerSession session, Job j, boolean collectRuleSet1, PrintWriter p, Job extractorJob, AccountItemContext context, String type, boolean suggestedClearFlag) throws Exception {
+        this(session, j, collectRuleSet1, p, extractorJob, context.getCompanyCode(), context.getAccountGroup(), type, context.getParentDate(), suggestedClearFlag);
     }
-    public DataTransformer(SchedulerSession session,Job j,boolean collectRuleSet1,PrintWriter p,Job job, String companyCode, String accountGroup, String type, DateTimeZone parentDate, boolean suggestedClearFlag)
-            throws Exception
-    {
-        context = new AccountItemContext(j,parentDate);
+
+    public DataTransformer(SchedulerSession session, Job j, boolean collectRuleSet1, PrintWriter p, Job extractorJob, String companyCode, String accountGroup, String type, DateTimeZone parentDate, boolean suggestedClearFlag)
+            throws Exception {
+        context = new AccountItemContext(j, parentDate);
 
         this.companyCode = companyCode;
         this.accountGroup = accountGroup;
@@ -50,180 +50,155 @@ class DataTransformer
         id = j.getJobId();
         p.println("DataTransformer created - " + id);
 
-        if(!context.getStatus().equals("Completed"))
-        {
+        if (!context.getStatus().equals("Completed")) {
             ruleSet1 = 0;
             autoClear = 0;
             suggestedClear = 0;
             totalCollected = 0;
-        }
-        else
-        {
+        } else {
             ruleSet1 = j.getJobParameterByName("RuleSet1RowCount") != null ? j.getJobParameterByName("RuleSet1RowCount").getOutValueNumber().intValue() : 0;
-            if(collectRuleSet1) printRuleSet1Items(session,j,p,job);
+            if (collectRuleSet1) printRuleSet1Items(session, j, p, extractorJob);
             autoClear = j.getJobParameterByName("AutoClearRowCount") != null ? j.getJobParameterByName("AutoClearRowCount").getOutValueNumber().intValue() : 0;
-            if(autoClear != 0) printAutoClearItems(session,j,p,job);
+            if (autoClear != 0) printAutoClearItems(session, j, p, extractorJob);
             suggestedClear = j.getJobParameterByName("SuggestedClearRowCount") != null ? j.getJobParameterByName("SuggestedClearRowCount").getOutValueNumber().intValue() : 0;
-            if(suggestedClear != 0) printSuggestedClearItems(session,j,p,job);
+            if (suggestedClear != 0) printSuggestedClearItems(session, j, p, extractorJob);
             totalCollected = j.getJobParameterByName("OUT_ROWCOUNT") != null ? j.getJobParameterByName("OUT_ROWCOUNT").getOutValueNumber().intValue() : 0;
-            if(totalCollected != 0 && !collectRuleSet1) printOpenItems(session,j,p,job);
-            if(j.getJobParameterByName("SuggestedClearRowCount") == null) suggestedClear = totalCollected;
-            if(suggestedClearFlag) printSetWithCondition(session,j,"RuleSet1",p,job,"proposed");
+            if (totalCollected != 0 && !collectRuleSet1) printOpenItems(session, j, p, extractorJob);
+            if (j.getJobParameterByName("SuggestedClearRowCount") == null) suggestedClear = totalCollected;
+            if (suggestedClearFlag) printSetWithCondition(session, j, "RuleSet1", p, extractorJob, "proposed");
         }
     }
-    private Set<String> getSuggestedClearItems(Job j,PrintWriter p)
-            throws Exception
-    {
-        return getSet(j,"SuggestedClear",p);
+
+    private Set<String> getSuggestedClearItems(Job j, PrintWriter p)
+            throws Exception {
+        return getSet(j, "SuggestedClear", p);
     }
 
-    private Set<String> getAutoClearItems(Job j,PrintWriter p)
-            throws Exception
-    {
-        return getSet(j,"AutoClear",p);
+    private Set<String> getAutoClearItems(Job j, PrintWriter p)
+            throws Exception {
+        return getSet(j, "AutoClear", p);
     }
 
-    private Set<String> getOpenItems(Job j,PrintWriter p)
-            throws Exception
-    {
-        return getSet(j,"OUT_TABLE",p);
+    private Set<String> getOpenItems(Job j, PrintWriter p)
+            throws Exception {
+        return getSet(j, "OUT_TABLE", p);
     }
-    private Set<String> getRuleSet1Items(Job j,PrintWriter p)
-            throws Exception
-    {
-        return getSet(j,"RuleSet1",p);
+
+    private Set<String> getRuleSet1Items(Job j, PrintWriter p)
+            throws Exception {
+        return getSet(j, "RuleSet1", p);
     }
-    private Set<String> getSet(Job j,String parameter,PrintWriter p)
-            throws Exception
-    {
+
+    private Set<String> getSet(Job j, String parameter, PrintWriter p) throws Exception {
+
         String jobStatus = j.getStatus().getTranslationEN();
-        if(!jobStatus.equals("Completed")) return null;
-        if(j.getJobParameterByName(parameter).getOutValueTableParameter() == null) return new HashSet<>();
-        Set<String>answer = new HashSet<>();
-        try(RTXReader reader = j.getJobParameterByName(parameter).getOutValueTableParameter().getRTXReader() )
-        {
-            for(RTXRow r : reader.rows())
-            {
-                String belnr = r.getString("BELNR");
-                String buzei = r.getString("BUZEI");
-                String gjahr = r.getString("GJAHR");
-                String rldnr = (r.getMetadata().hasColumn("RLDNR")) ? r.getString("RLDNR") : "";
-                if(answer.contains(belnr + buzei + gjahr + rldnr))
-                {
-                    p.println(belnr + buzei + gjahr + rldnr + " already existst in set - skipping...");
+        if (!jobStatus.equals("Completed")) return null;
+
+        if (j.getJobParameterByName(parameter).getOutValueTableParameter() == null) return new HashSet<>();
+        Set<String> answer = new HashSet<>();
+        try (RTXReader reader = j.getJobParameterByName(parameter).getOutValueTableParameter().getRTXReader()) {
+            for (RTXRow r : reader.rows()) {
+                String key = RTXService.getDocumentKey(r);
+                if (answer.contains(key)) {
+                    p.println(key + " already existst in set - skipping...");
                     skippedCount++;
                 }
-                answer.add(belnr + buzei + gjahr + rldnr);
+                answer.add(key);
             }
         }
         return answer;
     }
 
-    private void printSuggestedClearItems(SchedulerSession session,Job j,PrintWriter p, Job job)
-            throws Exception
-    {
-        printSet(session,j,"SuggestedClear",p,job,"proposed");
+    private void printSuggestedClearItems(SchedulerSession session, Job j, PrintWriter p, Job extractorJob)
+            throws Exception {
+        printSet(session, j, "SuggestedClear", p, extractorJob, "proposed");
     }
 
-    private void printAutoClearItems(SchedulerSession session,Job j,PrintWriter p, Job job)
-            throws Exception
-    {
-        printSet(session,j,"AutoClear",p,job,"proposed");
+    private void printAutoClearItems(SchedulerSession session, Job j, PrintWriter p, Job extractorJob)
+            throws Exception {
+        printSet(session, j, "AutoClear", p, extractorJob, "proposed");
     }
 
-    private void printOpenItems(SchedulerSession session,Job j,PrintWriter p,Job job)
-            throws Exception
-    {
-        printSet(session,j,"OUT_TABLE",p,job,"proposed");
+    private void printOpenItems(SchedulerSession session, Job j, PrintWriter p, Job extractorJob)
+            throws Exception {
+        printSet(session, j, "OUT_TABLE", p, extractorJob, "proposed");
     }
-    private void printRuleSet1Items(SchedulerSession session,Job j,PrintWriter p,Job job)
-            throws Exception
-    {
-        printSet(session,j,"RuleSet1",p,job,"total");
+
+    private void printRuleSet1Items(SchedulerSession session, Job j, PrintWriter p, Job extractorJob)
+            throws Exception {
+        printSet(session, j, "RuleSet1", p, extractorJob, "total");
     }
-    private void printSet(SchedulerSession session,Job j,String parameter,PrintWriter p, Job job, String name)
-            throws Exception
-    {
+
+    private void printSet(SchedulerSession session, Job j, String parameter, PrintWriter p, Job extractorJob, String name) throws Exception {
+
         String jobStatus = j.getStatus().getTranslationEN();
-        if(!jobStatus.equals("Completed")) return;
-        if(j.getJobParameterByName(parameter) == null) return;
-        if(j.getJobParameterByName(parameter).getOutValueTableParameter() == null) return;
-        String fileName = getFileName(new FileKey(context.getParentDate(),companyCode,accountGroup,type,name));
+        if (!jobStatus.equals("Completed")) return;
+
+        RTXReader reader = RTXService.getReader(j, parameter);
+        if (reader == null) return;
+
+
+
+        String fileName = getFileName(new FileKey(context.getParentDate(), companyCode, accountGroup, type, name));
         boolean append = true;
-        JobFile jf = job.getJobFileByName(fileName);
-        if(jf == null)
-        {
+        JobFile jf = extractorJob.getJobFileByName(fileName);
+        if (jf == null) {
             p.println("file missing: " + fileName);
-            jf = createJobFile(session,job, fileName);
+            jf = createJobFile(session, extractorJob, fileName);
             append = false;
         }
-        try(FileOutputStream out = new FileOutputStream(jf.getFileName(),append))
-        {
-            try(RTXReader reader = j.getJobParameterByName(parameter).getOutValueTableParameter().getRTXReader() )
-            {
-                for(RTXRow r : reader.rows())
-                {
-                    String belnr = r.getString("BELNR");
-                    String buzei = r.getString("BUZEI");
-                    String gjahr = r.getString("GJAHR");
-                    String rldnr = (r.getMetadata().hasColumn("RLDNR")) ? r.getString("RLDNR") : "";
-                    String doc = belnr + buzei + gjahr + rldnr;
-                    write(out,doc);
+        try (FileOutputStream out = new FileOutputStream(jf.getFileName(), append)) {
+            try (reader) {
+                for (RTXRow r : reader.rows()) {
+                    String doc = RTXService.getDocumentKey(r);
+                    write(out, doc);
                 }
             }
         }
     }
-    private void printSetWithCondition(SchedulerSession session,Job j,String parameter,PrintWriter p, Job job, String name)
-            throws Exception
-    {
+
+    private void printSetWithCondition(SchedulerSession session, Job j, String parameter, PrintWriter p, Job extractorJob, String name)
+            throws Exception {
         String jobStatus = j.getStatus().getTranslationEN();
-        if(!jobStatus.equals("Completed")) return;
-        if(j.getJobParameterByName(parameter) == null) return;
-        if(j.getJobParameterByName(parameter).getOutValueTableParameter() == null) return;
-        String fileName = getFileName(new FileKey(context.getParentDate(),companyCode,accountGroup,type,name));
+        if (!jobStatus.equals("Completed")) return;
+        if (j.getJobParameterByName(parameter) == null) return;
+        if (j.getJobParameterByName(parameter).getOutValueTableParameter() == null) return;
+        String fileName = getFileName(new FileKey(context.getParentDate(), companyCode, accountGroup, type, name));
         boolean append = true;
-        JobFile jf = job.getJobFileByName(fileName);
-        if(jf == null)
-        {
+        JobFile jf = extractorJob.getJobFileByName(fileName);
+        if (jf == null) {
             p.println("file missing: " + fileName);
-            jf = createJobFile(session,job, fileName);
+            jf = createJobFile(session, extractorJob, fileName);
             append = false;
         }
-        try(FileOutputStream out = new FileOutputStream(jf.getFileName(),append))
-        {
-            try(RTXReader reader = j.getJobParameterByName(parameter).getOutValueTableParameter().getRTXReader() )
-            {
-                for(RTXRow r : reader.rows())
-                {
-                    String belnr = r.getString("BELNR");
-                    String buzei = r.getString("BUZEI");
-                    String gjahr = r.getString("GJAHR");
-                    String rldnr = (r.getMetadata().hasColumn("RLDNR")) ? r.getString("RLDNR") : "";
+        try (FileOutputStream out = new FileOutputStream(jf.getFileName(), append)) {
+            try (RTXReader reader = j.getJobParameterByName(parameter).getOutValueTableParameter().getRTXReader()) {
+                for (RTXRow r : reader.rows()) {
                     String autoComment = (r.getMetadata().hasColumn("Auto_comment")) ? r.getCanonicalStringValue("Auto_comment") : "";
-                    String doc = belnr + buzei + gjahr + rldnr;
-                    if(autoComment.equals("Proposed for Clearing")) write(out,doc);
+                    String doc = RTXService.getDocumentKey(r);
+                    if (autoComment.equals("Proposed for Clearing")) write(out, doc);
                 }
             }
         }
     }
-    public int getRuleSet1()
-    {
+
+    public int getRuleSet1() {
         return ruleSet1;
     }
-    public int getAutoClear()
-    {
+
+    public int getAutoClear() {
         return autoClear;
     }
-    public int getSuggestedClear()
-    {
+
+    public int getSuggestedClear() {
         return suggestedClear;
     }
-    public int getTotalCollected()
-    {
+
+    public int getTotalCollected() {
         return totalCollected;
     }
-    public Job getJob()
-    {
+
+    public Job getJob() {
         return context.getJob();
     }
 

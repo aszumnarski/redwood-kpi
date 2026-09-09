@@ -30,13 +30,13 @@ public class AccountItemAutoLedger implements AccountItemSource
     }
 
     @Override
-    public void collectChildren(SchedulerSession session,PrintWriter p,Job job)
+    public void collectChildren(SchedulerSession session,PrintWriter p,Job extractorJob)
             throws Exception
     {
-        scan(session, context.getJob(), p,job);
+        scan(session, context.getJob(), p,extractorJob);
     }
 
-    private void scan(SchedulerSession session, Job parent, PrintWriter p,Job job)
+    private void scan(SchedulerSession session, Job parent, PrintWriter p,Job extractorJob)
             throws Exception
     {
         for(Job child: parent.getChildJobs())
@@ -47,11 +47,11 @@ public class AccountItemAutoLedger implements AccountItemSource
             if (rule != null)
             {
                 AccountItemSource source = rule.createSource(child, context.getParentDate());
-                source.collectChildren(session, p, job);
+                source.collectChildren(session, p, extractorJob);
                 stats.add(source.getStats());
             }
 
-            scan(session,child,p,job);
+            scan(session,child,p,extractorJob);
         }
     }
 

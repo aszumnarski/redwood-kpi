@@ -22,39 +22,40 @@ public class LeafCollector implements AccountItemSource {
 
         this.context = new AccountItemContext(job, parentDate);
         this.fileWriter = new ResultFileWriter(context, config.type());
-        this.clearingProcessor = new ClearingResultProcessor(fileWriter);
+        this.clearingProcessor = new ClearingResultProcessor(fileWriter, RTXSchemas.DT);
         this.config = config;
         this.stats = new CollectorStats();
     }
 
-    public void collectChildren(SchedulerSession session, PrintWriter p, Job job)
+    public void collectChildren(SchedulerSession session, PrintWriter p, Job extractorJob)
             throws Exception {
-        scan(session, context.getJob(), p, job);
+        scan(session, context.getJob(), p, extractorJob);
     }
 
-    private void scan(SchedulerSession session, Job parent, PrintWriter pw, Job job)
+    private void scan(SchedulerSession session, Job parent, PrintWriter pw, Job extractorJob)
             throws Exception {
 
         String p = parent.getJobDefinition().getMasterJobDefinition().getName();
         for (Job child : parent.getChildJobs()) {
             String c = child.getJobDefinition().getMasterJobDefinition().getName();
             if (isBaseWorkingParent(p, c)) {
-                DataTransformer tot = new DataTransformer(session, child, true, pw, job, context.getCompanyCode(), context.getAccountGroup(), config.type(), context.getParentDate());
+                DataTransformer tot = new DataTransformer(session, child, true, pw, extractorJob, context.getCompanyCode(), context.getAccountGroup(), config.type(), context.getParentDate());
                 stats.setTotalOpenItems(tot.getRuleSet1());
 
             } else if (isDtJob(p, c)) {
-                DataTransformer dt = new DataTransformer(session, child, false, pw, job, context.getCompanyCode(), context.getAccountGroup(), config.type(), context.getParentDate());
+                DataTransformer dt = new DataTransformer(session, child, false, pw, extractorJob, context.getCompanyCode(), context.getAccountGroup(), config.type(), context.getParentDate());
                 stats.addDt(dt);
             } else if (c.equals("CUS_TRN_COLLECT_RTX") && config.collectRtx()) {
-                DataTransformer dt = new DataTransformer(session, child, false, pw, job, context.getCompanyCode(), context.getAccountGroup(), config.type(), context.getParentDate());
+                DataTransformer dt = new DataTransformer(session, child, false, pw, extractorJob, context.getCompanyCode(), context.getAccountGroup(), config.type(), context.getParentDate());
                 stats.setTotalCollectedItems(dt.getTotalCollected());
             } else if (c.equals("FCA_SAP_Tran_FB05_Clearing")) {
-                stats.apply(clearingProcessor.process(session, child, job, stats.getTotalCollected()));
+                stats.apply(clearingProcessor.process(session, child, extractorJob, stats.getTotalCollected(),pw));
             }
-            scan(session, child, pw, job);
+            scan(session, child, pw, extractorJob);
         }
 
     }
+
 
     private boolean isBaseWorkingParent(String p, String c) {
         if (!c.contains("BaseWorking")) return false;

@@ -14,25 +14,25 @@ public class Extractor
     private final Processor processor;
     private final Collector collector;
     private final SchedulerSession session;
-    private final Job job;
+    private final Job extractorJob;
     private final PrintWriter out;
 
-    public Extractor(Processor processor, Collector collector, SchedulerSession session, Job job, PrintWriter out)
+    public Extractor(Processor processor, Collector collector, SchedulerSession session, Job extractorJob, PrintWriter out)
     {
         this.processor = processor;
         this.collector = collector;
         this.session = session;
-        this.job = job;
+        this.extractorJob = extractorJob;
         this.out = out;
     }
 
     public void execute()
             throws Exception
     {
-        String query = getQuery(session,job);
+        String query = getQuery(session, extractorJob);
         out.println(query);
         Iterator<Job> it = session.executeObjectQuery(query, null);
         collector.collectAll(it,out);
-        processor.processNoSum(collector.getWorkItems(),session,job,out);
+        processor.processNoSum(collector.getWorkItems(),session, extractorJob,out);
     }
 }
