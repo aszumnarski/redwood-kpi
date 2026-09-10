@@ -84,7 +84,7 @@ public class AutoClearing {
             throws Exception {
         for (Job child : parent.getChildJobs()) {
 
-            p.println("SCAN: " + parent + " -> " + child);
+            //p.println("SCAN: " + parent + " -> " + child);
             Rule rule = findRule(parent, child,p);
 
             if (rule != null)
@@ -111,10 +111,10 @@ public class AutoClearing {
         {
             boolean match = rule.matches(parent, child);
 
-            p.println("RULE: " + rule + " => " + match);
+            //p.println("RULE: " + rule + " => " + match);
             if (match)
             {
-                p.println("MATCHED RULE: " + rule);
+                //p.println("MATCHED RULE: " + rule);
                 return rule;
             }
         }

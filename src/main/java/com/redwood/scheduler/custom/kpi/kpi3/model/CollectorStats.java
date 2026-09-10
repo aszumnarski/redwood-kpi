@@ -52,11 +52,11 @@ public class CollectorStats
         return errors;
     }
 
-    void addDt(DataTransformerCollector dt)
+    void addDt(CollectorStats other)
     {
-        if (ruleSet1 == 0) ruleSet1 = dt.getRuleSet1();
-        autoClear += dt.getAutoClear();
-        suggestedClear += dt.getSuggestedClear();
+        if (ruleSet1 == 0) ruleSet1 = other.getRuleSet1();
+        autoClear += other.getAutoClear();
+        suggestedClear += other.getSuggestedClear();
         totalCollected = autoClear + suggestedClear;
     }
 

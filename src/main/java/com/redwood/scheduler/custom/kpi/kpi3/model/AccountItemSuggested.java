@@ -29,7 +29,7 @@ public class AccountItemSuggested implements AccountItemSource {
     @Override
     public void collectChildren(SchedulerSession session, PrintWriter p, Job job) throws Exception {
 
-        p.println("JOBSTATUS: " + context.getStatus());
+        //p.println("JOBSTATUS: " + context.getStatus());
 
         if (!"Waiting".equals(context.getStatus()) && !"Completed".equals(context.getStatus())) {
             return;
@@ -55,7 +55,7 @@ public class AccountItemSuggested implements AccountItemSource {
         for (Job child : parent.getChildJobs()) {
             String c = child.getJobDefinition().getName();
             String stepName = child.getJobChainStep() == null ? null : child.getJobChainStep().getName();
-            pw.println("PARENT[" + parent.getJobId() + "] " + p + " -> CHILD[" + child.getJobId() + "] " + c + " STEP[" + stepName + "]");
+            //pw.println("PARENT[" + parent.getJobId() + "] " + p + " -> CHILD[" + child.getJobId() + "] " + c + " STEP[" + stepName + "]");
 
             if (isBaseWorking(p, c)) {
                 processBaseWorking(session, child, pw, job);
@@ -78,9 +78,9 @@ public class AccountItemSuggested implements AccountItemSource {
     }
 
     void processStandardDt(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
-        pw.println("Creating standard DT");
+        //pw.println("Creating standard DT");
         DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, job, context, "suggested", false);
-        stats.addDt(dt);
+        stats.addDt(dt.getStats());
     }
 
     boolean isStandardDt(String parentName, String childName) {
@@ -88,7 +88,7 @@ public class AccountItemSuggested implements AccountItemSource {
     }
 
     void processLastRule(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
-        pw.println("Creating LastRule DT");
+        //pw.println("Creating LastRule DT");
         DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, job, context, "suggested", true);
         stats.setTotalCollectedItems(stats.getTotalCollected() + dt.getTotalCollected());
 
@@ -99,7 +99,7 @@ public class AccountItemSuggested implements AccountItemSource {
     }
 
     void processBaseWorking(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
-        pw.println("Creating baseworking DT");
+        //pw.println("Creating baseworking DT");
         DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, job, context, "suggested", false);
         stats.setTotalOpenItems(tot.getRuleSet1());
     }
@@ -115,7 +115,7 @@ public class AccountItemSuggested implements AccountItemSource {
             return;
         }
 
-        p.println("Cert ID: " + certificationId);
+        //p.println("Cert ID: " + certificationId);
 
         fileWriter.writeItemsToFile(session, job, "certId", List.of(certificationId));
     }

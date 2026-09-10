@@ -24,9 +24,9 @@ public class Processor
 
         for (WorkItem item : items)
         {
-            DateTimeZone dtz1 = new DateTimeZone();
+            DateTimeZone dtz1 = DateTimeZone.now();
             processWorkItem(item, session, extractorJob, p);
-            DateTimeZone dtz2 = new DateTimeZone();
+            DateTimeZone dtz2 = DateTimeZone.now();
             long elapsedSec = (dtz2.getUTCMilliSecs() - dtz1.getUTCMilliSecs()) / 1000;
             p.println("Loop " + counter + (total > 0 ? " of " + total : "") + ": " + item.getType() + " - " + item.getBukrs() + " - accountGroup=" + item.getAccountGroup() + " (" + item.getJob().getJobId() + ") processed in " + elapsedSec + " seconds.");
             counter ++;
@@ -37,16 +37,16 @@ public class Processor
             throws Exception
     {
         String definitionName = item.getJob().getJobDefinition().getMasterJobDefinition().getName();
-        p.println("Processor.processWorkItem: definitionName" + definitionName);
+        //p.println("Processor.processWorkItem: definitionName" + definitionName);
         JobDefinitionRegistry definition = JobDefinitionRegistry.fromName(definitionName);
 
         if (definition == null)
         {
-            p.println("Processor.processWorkItem: definition not found!");
+            //p.println("Processor.processWorkItem: definition not found!");
             writeMissingChain(definitionName, session, extractorJob);
             return;
         }
-        p.println("Processor.processWorkItem: definition found, processing using handler " + definition.handler.name() + " ...");
+        //p.println("Processor.processWorkItem: definition found, processing using handler " + definition.handler.name() + " ...");
         definition.handler.handle(item.getJob(), session, p, extractorJob);
 
     }

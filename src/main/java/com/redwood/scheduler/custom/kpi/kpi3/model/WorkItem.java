@@ -30,7 +30,7 @@ public final class WorkItem
     {
         return "WorkItem{" +
                 "period='" + period + '\'' +
-                ", type='" + type.toString().toLowerCase() + '\'' +
+                ", outputCategory='" + type.toString().toLowerCase() + '\'' +
                 ", bukrs='" + bukrs + '\'' +
                 ", accountGroup='" + accountGroup + '\'' +
                 ", jobId=" + job.getJobId() +

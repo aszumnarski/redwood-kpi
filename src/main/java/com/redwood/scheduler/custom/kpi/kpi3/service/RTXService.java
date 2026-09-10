@@ -15,7 +15,7 @@ public final class RTXService {
     public static Map<String, List<String>> groupByKey(Job job, String parameterName, RTXSchema schema, PrintWriter writer)
             throws Exception {
         Map<String, List<String>> answer = new HashMap<>();
-        writer.println("RTXService.groupByKey: trying to find reader for job " + job.getJobId() + " from parameter: " + parameterName);
+        //writer.println("RTXService.groupByKey: trying to find reader for job " + job.getJobId() + " from parameter: " + parameterName);
         try (RTXReader reader = getReader(job, parameterName)) {
             if (reader == null) return answer;
 

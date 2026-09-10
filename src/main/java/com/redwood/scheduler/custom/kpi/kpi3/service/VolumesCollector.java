@@ -78,7 +78,7 @@ public class VolumesCollector
             String[] parts = file.split("=",-1);
             //out.println(parts[0]);
             FileKey fileKey = getKey(parts[0]);
-            out.println(fileKey);
+            //out.println(fileKey);
             filesMap.computeIfAbsent(fileKey, k -> new ArrayList<>()).add(parts[1]);
         }
 

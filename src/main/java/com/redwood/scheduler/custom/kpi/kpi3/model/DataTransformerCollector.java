@@ -32,7 +32,7 @@ class DataTransformerCollector {
         this.childJob = childJob;
         this.extractorJob = extractorJob;
 
-        p.println("DataTransformerCollector created - " + childJob.getJobId());
+        //p.println("DataTransformerCollector created - " + childJob.getJobId());
 
         if (!isCompleted(childJob)) return;
 

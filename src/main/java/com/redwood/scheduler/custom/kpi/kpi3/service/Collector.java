@@ -4,10 +4,8 @@ import com.redwood.scheduler.custom.kpi.kpi3.config.JobDefinitionRegistry;
 import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
 import com.redwood.scheduler.custom.kpi.kpi3.model.WorkItem;
 
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 import java.io.PrintWriter;
-import java.util.Iterator;
 
 import static com.redwood.scheduler.custom.kpi.kpi3.date.PeriodUtil.getPeriod;
 import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
@@ -16,6 +14,9 @@ import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getPa
 public class Collector
 {
     private final List<WorkItem> workItems = new ArrayList<>();
+    private int jobsCollected;
+    private int unknownJobs;
+    private final Map<JobType,Integer> typeCounts = new HashMap<>();
 
     public void collectAll(Iterator<Job> it, PrintWriter p)
             throws Exception
@@ -25,13 +26,15 @@ public class Collector
         {
             collectJob(it.next(),p);
         }
-
     }
     private void collectJob(Job j, PrintWriter p)
             throws Exception
     {
+        jobsCollected++;
         JobDefinitionRegistry def = JobDefinitionRegistry.fromName(j.getJobDefinition().getMasterJobDefinition().getName());
         JobType type = def != null ? def.type : JobType.UNKNOWN;
+        if (type == JobType.UNKNOWN) { unknownJobs++; }
+        typeCounts.merge(type, 1, Integer::sum);
 
         String period = getPeriod(j.getRunStart());
         String bukrs = getParameter(j,"BUKRS");
@@ -41,12 +44,30 @@ public class Collector
 
     public Iterable<WorkItem> getWorkItems() {return workItems;}
 
-    public void print(PrintWriter p)
-    {
-        for (WorkItem wi : workItems)
-        {
-            p.println(wi.getPeriod() + ";" + wi.getType().toString().toLowerCase() + ";" + wi.getBukrs() + ";" + wi.getAccountGroup() + ";" + wi.getJob().getJobId());
-        }
+    public String getStatistics() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("\n");
+        sb.append("========================================\n");
+        sb.append("COLLECTOR STATISTICS\n");
+        sb.append("========================================\n");
+
+        sb.append("Jobs collected : ").append(jobsCollected).append("\n");
+        sb.append("Unknown jobs   : ").append(unknownJobs).append("\n");
+        sb.append("Work items     : ").append(workItems.size()).append("\n");
+
+        sb.append("\nJob types:\n");
+
+        typeCounts.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e ->
+                        sb.append(String.format("  %-20s %8d%n",
+                                e.getKey(),
+                                e.getValue())));
+
+        sb.append("========================================\n");
+
+        return sb.toString();
     }
 
 }

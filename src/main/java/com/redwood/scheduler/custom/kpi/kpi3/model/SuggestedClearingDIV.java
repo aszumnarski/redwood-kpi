@@ -43,10 +43,7 @@ public class SuggestedClearingDIV implements AccountItemSource
             DateTimeZone parentDate)
             throws Exception
     {
-        this.context = new AccountItemContext(
-                job,
-                parentDate);
-
+        this.context = new AccountItemContext(job, parentDate);
         this.stats = new CollectorStats();
     }
 
@@ -82,12 +79,7 @@ public class SuggestedClearingDIV implements AccountItemSource
 
             if (rule != null)
             {
-                processRule(
-                        rule,
-                        child,
-                        session,
-                        p,
-                        job);
+                processRule(rule, child, session, p, job);
             }
 
             scan(session, child, p, job);
@@ -109,26 +101,11 @@ public class SuggestedClearingDIV implements AccountItemSource
         return null;
     }
 
-    private void processRule(
-            Rule rule,
-            Job child,
-            SchedulerSession session,
-            PrintWriter p,
-            Job job)
-            throws Exception
+    private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job job) throws Exception
     {
-        AccountItemSource source =
-                rule.createSource(
-                        child,
-                        context.getRunStartDate());
-
-        source.collectChildren(
-                session,
-                p,
-                job);
-
-        stats.add(
-                source.getStats());
+        AccountItemSource source = rule.createSource(child, context.getRunStartDate());
+        source.collectChildren(session, p, job);
+        stats.add(source.getStats());
     }
 
     @Override

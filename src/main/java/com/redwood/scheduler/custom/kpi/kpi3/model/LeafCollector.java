@@ -21,7 +21,7 @@ public class LeafCollector implements AccountItemSource {
             CollectorConfig config) throws Exception {
 
         this.context = new AccountItemContext(job, parentDate);
-        this.fileWriter = new ResultFileWriter(context, config.type());
+        this.fileWriter = new ResultFileWriter(context, config.outputCategory());
         this.clearingProcessor = new ClearingResultProcessor(fileWriter, RTXSchemas.DT);
         this.config = config;
         this.stats = new CollectorStats();
@@ -39,16 +39,17 @@ public class LeafCollector implements AccountItemSource {
         for (Job child : parent.getChildJobs()) {
             String c = child.getJobDefinition().getMasterJobDefinition().getName();
             if (isBaseWorkingParent(p, c)) {
-                DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, extractorJob, context, config.type(), false);
+                DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, extractorJob, context, config.outputCategory(), false);
                 stats.setTotalOpenItems(tot.getRuleSet1());
             } else if (isDtJob(p, c)) {
-                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, config.type(), false);
-                stats.addDt(dt);
+                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, config.outputCategory(), false);
+                stats.addDt(dt.getStats());
             } else if (c.equals("CUS_TRN_COLLECT_RTX") && config.collectRtx()) {
-                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, config.type(), false);
+                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, config.outputCategory(), false);
                 stats.setTotalCollectedItems(dt.getTotalCollected());
             } else if (c.equals("FCA_SAP_Tran_FB05_Clearing")) {
-                stats.apply(clearingProcessor.process(session, child, extractorJob, stats.getTotalCollected(),pw));
+                ClearingResult result = clearingProcessor.process(session, child, extractorJob, stats.getTotalCollected(),pw);
+                stats.apply(result);
             }
             scan(session, child, pw, extractorJob);
         }
