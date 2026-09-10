@@ -39,14 +39,13 @@ public class LeafCollector implements AccountItemSource {
         for (Job child : parent.getChildJobs()) {
             String c = child.getJobDefinition().getMasterJobDefinition().getName();
             if (isBaseWorkingParent(p, c)) {
-                DataTransformer tot = new DataTransformer(session, child, true, pw, extractorJob, context.getCompanyCode(), context.getAccountGroup(), config.type(), context.getParentDate());
+                DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, extractorJob, context, config.type(), false);
                 stats.setTotalOpenItems(tot.getRuleSet1());
-
             } else if (isDtJob(p, c)) {
-                DataTransformer dt = new DataTransformer(session, child, false, pw, extractorJob, context.getCompanyCode(), context.getAccountGroup(), config.type(), context.getParentDate());
+                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, config.type(), false);
                 stats.addDt(dt);
             } else if (c.equals("CUS_TRN_COLLECT_RTX") && config.collectRtx()) {
-                DataTransformer dt = new DataTransformer(session, child, false, pw, extractorJob, context.getCompanyCode(), context.getAccountGroup(), config.type(), context.getParentDate());
+                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, config.type(), false);
                 stats.setTotalCollectedItems(dt.getTotalCollected());
             } else if (c.equals("FCA_SAP_Tran_FB05_Clearing")) {
                 stats.apply(clearingProcessor.process(session, child, extractorJob, stats.getTotalCollected(),pw));

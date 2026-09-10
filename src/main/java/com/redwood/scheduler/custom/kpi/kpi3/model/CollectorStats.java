@@ -16,12 +16,24 @@ public class CollectorStats
         return ruleSet1;
     }
 
+    public void setRuleSet1(int ruleSet1) {
+        this.ruleSet1 = ruleSet1;
+    }
+
     public int getAutoClear() {
         return autoClear;
     }
 
+    public void setAutoClear(int autoClear) {
+        this.autoClear = autoClear;
+    }
+
     public int getSuggestedClear() {
         return suggestedClear;
+    }
+
+    public void setSuggestedClear(int suggestedClear) {
+        this.suggestedClear = suggestedClear;
     }
 
     public int getItemsCleared() {
@@ -40,7 +52,7 @@ public class CollectorStats
         return errors;
     }
 
-    void addDt(DataTransformer dt)
+    void addDt(DataTransformerCollector dt)
     {
         if (ruleSet1 == 0) ruleSet1 = dt.getRuleSet1();
         autoClear += dt.getAutoClear();
