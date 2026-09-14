@@ -1,4 +1,6 @@
-package com.redwood.scheduler.custom.kpi.kpi3.model;
+package com.redwood.scheduler.custom.kpi.kpi3.monitoring;
+
+import com.redwood.scheduler.custom.kpi.kpi3.model.ClearingResult;
 
 public class CollectorStats
 {
@@ -52,7 +54,7 @@ public class CollectorStats
         return errors;
     }
 
-    void addDt(CollectorStats other)
+    public void addDt(CollectorStats other)
     {
         if (ruleSet1 == 0) ruleSet1 = other.getRuleSet1();
         autoClear += other.getAutoClear();
@@ -60,7 +62,7 @@ public class CollectorStats
         totalCollected = autoClear + suggestedClear;
     }
 
-    void apply(ClearingResult result)
+    public void apply(ClearingResult result)
     {
         clearId = result.clearId();
         itemsCleared += result.itemsCleared();

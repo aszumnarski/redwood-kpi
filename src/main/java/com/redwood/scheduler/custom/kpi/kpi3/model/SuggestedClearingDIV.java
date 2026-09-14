@@ -6,9 +6,13 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.custom.kpi.kpi3.config.AccountItemType;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
+import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
+import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
 
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SuggestedClearingDIV implements AccountItemSource
 {
@@ -37,6 +41,9 @@ public class SuggestedClearingDIV implements AccountItemSource
 
     private final AccountItemContext context;
     private final CollectorStats stats;
+    private final ScanStats scanStats;
+    private final Map<String, Long> sourceTimes = new HashMap<>();
+    private final Map<String, Integer> sourceCounts = new HashMap<>();
 
     public SuggestedClearingDIV(
             Job job,
@@ -45,6 +52,7 @@ public class SuggestedClearingDIV implements AccountItemSource
     {
         this.context = new AccountItemContext(job, parentDate);
         this.stats = new CollectorStats();
+        this.scanStats = new ScanStats();
     }
 
     @Override
@@ -54,16 +62,34 @@ public class SuggestedClearingDIV implements AccountItemSource
             Job job)
             throws Exception
     {
-        scan(
-                session,
-                context.getJob(),
-                p,
-                job);
+        scan(session, context.getJob(), p, job);
+        p.println("SuggestedClearingDIV stats: " + scanStats);
+
+        p.println("DIV SOURCE PERFORMANCE");
+
+        sourceTimes.entrySet()
+                .stream()
+                .sorted((a,b) ->
+                        Long.compare(
+                                b.getValue(),
+                                a.getValue()))
+                .forEach(e -> {
+
+                    String sourceName = e.getKey();
+                    long totalMs = e.getValue();
+                    int count = sourceCounts.get(sourceName);
+
+                    p.println(
+                            sourceName +
+                                    " | count=" + count +
+                                    " | totalMs=" + totalMs +
+                                    " | avgMs=" + (totalMs / count));
+                });
     }
 
     @Override
     public AccountItemContext getContext() {
-        return null;
+        return context;
     }
 
     private void scan(
@@ -75,10 +101,13 @@ public class SuggestedClearingDIV implements AccountItemSource
     {
         for (Job child : parent.getChildJobs())
         {
+            scanStats.incrementVisitedJobs();
+            scanStats.jobIds(child.getJobId());
             Rule rule = findRule(parent, child);
 
             if (rule != null)
             {
+                scanStats.incrementMatchedRules();
                 processRule(rule, child, session, p, job);
             }
 
@@ -104,7 +133,13 @@ public class SuggestedClearingDIV implements AccountItemSource
     private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job job) throws Exception
     {
         AccountItemSource source = rule.createSource(child, context.getRunStartDate());
+        scanStats.incrementCreatedSources();
+        long start = System.currentTimeMillis();
         source.collectChildren(session, p, job);
+        long elapsed = System.currentTimeMillis() - start;
+        String sourceName = source.getClass().getSimpleName();
+        sourceTimes.merge(sourceName, elapsed, Long::sum);
+        sourceCounts.merge(sourceName, 1, Integer::sum);
         stats.add(source.getStats());
     }
 

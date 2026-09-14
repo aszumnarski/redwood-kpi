@@ -3,7 +3,7 @@ package com.redwood.scheduler.custom.kpi.kpi3.service;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.JobFile;
 import com.redwood.scheduler.api.model.SchedulerSession;
-import com.redwood.scheduler.custom.kpi.kpi3.model.FileKey;
+import com.redwood.scheduler.custom.kpi.kpi3.file.FileKey;
 import com.redwood.scheduler.custom.kpi.kpi3.model.Reconciliation;
 import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
 
@@ -25,14 +25,14 @@ import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJo
 import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
 import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
-public class VolumesCollector
+public class VolumeAggregator
 {
     private final SchedulerSession session;
     private final Job job;
     private final PrintWriter out;
     private final PrintWriter err;
 
-    public VolumesCollector(SchedulerSession session, Job job, PrintWriter out, PrintWriter err)
+    public VolumeAggregator(SchedulerSession session, Job job, PrintWriter out, PrintWriter err)
     {
         this.session = session;
         this.job = job;
@@ -110,7 +110,6 @@ public class VolumesCollector
     {
         Map<FileKey, Row> result = new HashMap<>();
         Set<String> missingChains = new HashSet<>();
-        Set<String> certIds = new HashSet<>();
         for (FileKey key : filesMap.keySet())
         {
             List<String> total = new ArrayList<>();

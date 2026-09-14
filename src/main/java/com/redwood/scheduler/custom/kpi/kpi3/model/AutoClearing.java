@@ -7,14 +7,18 @@ import com.redwood.scheduler.custom.kpi.kpi3.config.AccountItemType;
 import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ParentDifferentChildRule;
+import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
+import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
 
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AutoClearing {
     private final CollectorStats stats;
-    private DateTimeZone runStartDate;
-    private Job job;
+    private final DateTimeZone runStartDate;
+    private final Job job;
 
 
     private static final List<Rule> RULES = List.of(
@@ -69,26 +73,55 @@ public class AutoClearing {
 
     );
 
+    private final ScanStats scanStats;
+
+    private final Map<String, Long> sourceTimes = new HashMap<>();
+    private final Map<String, Integer> sourceCounts = new HashMap<>();
+
     public AutoClearing(Job job) {
         this.job = job;
-        runStartDate = job.getRunStart();
-        stats = new CollectorStats();
+        this.runStartDate = job.getRunStart();
+        this.stats = new CollectorStats();
+        this.scanStats = new ScanStats();
     }
 
     public void collectActionItems(SchedulerSession session, PrintWriter p, Job extractorJob)
             throws Exception {
         scan(session, job, p, extractorJob);
+        p.println("AutoClearing stats: " + scanStats);
+        p.println("SOURCE PERFORMANCE");
+
+        sourceTimes.entrySet()
+                .stream()
+                .sorted((a, b) ->
+                        Long.compare(
+                                b.getValue(),
+                                a.getValue()))
+                .forEach(e -> {
+
+                    String sourceName = e.getKey();
+                    long totalMs = e.getValue();
+                    int count = sourceCounts.get(sourceName);
+
+                    p.println(
+                            sourceName +
+                                    " | count=" + count +
+                                    " | totalMs=" + totalMs +
+                                    " | avgMs=" + (totalMs / count));
+                });
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob)
             throws Exception {
         for (Job child : parent.getChildJobs()) {
 
-            //p.println("SCAN: " + parent + " -> " + child);
+            scanStats.incrementVisitedJobs();
+            scanStats.jobIds(child.getJobId());
             Rule rule = findRule(parent, child,p);
 
             if (rule != null)
             {
+                scanStats.incrementMatchedRules();
                 processRule(rule, child, session, p, extractorJob);
             }
 
@@ -100,8 +133,13 @@ public class AutoClearing {
     {
 
         AccountItemSource source = rule.createSource(child,runStartDate);
+        scanStats.incrementCreatedSources();
+        long start = System.currentTimeMillis();
         source.collectChildren(session, p, extractorJob);
-
+        long elapsed = System.currentTimeMillis() - start;
+        String sourceName = source.getClass().getSimpleName();
+        sourceTimes.merge(sourceName, elapsed, Long::sum);
+        sourceCounts.merge(sourceName, 1, Integer::sum);
         stats.add(source.getStats());
     }
 

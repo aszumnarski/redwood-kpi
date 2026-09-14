@@ -16,7 +16,7 @@ public class Collector
     private final List<WorkItem> workItems = new ArrayList<>();
     private int jobsCollected;
     private int unknownJobs;
-    private final Map<JobType,Integer> typeCounts = new HashMap<>();
+    private final Map<JobType,Integer> typeCounts = new EnumMap<>(JobType.class);
 
     public void collectAll(Iterator<Job> it, PrintWriter p)
             throws Exception

@@ -4,6 +4,8 @@ import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
+import com.redwood.scheduler.custom.kpi.kpi3.service.DataTransformerProcessor;
 
 import java.io.PrintWriter;
 import java.util.List;
@@ -18,6 +20,17 @@ public class AccountItemSuggested implements AccountItemSource {
     private final CollectorStats stats;
     private final ResultFileWriter fileWriter;
 
+    private int visitedJobs;
+    private int baseWorkingCount;
+    private int standardDtCount;
+    private int lastRuleCount;
+    private int certificationCount;
+
+    private long baseWorkingMs;
+    private long standardDtMs;
+    private long lastRuleMs;
+    private long certificationMs;
+
     public AccountItemSuggested(Job job, DateTimeZone parentDate) throws Exception {
 
         this.context = new AccountItemContext(job, parentDate);
@@ -29,13 +42,29 @@ public class AccountItemSuggested implements AccountItemSource {
     @Override
     public void collectChildren(SchedulerSession session, PrintWriter p, Job job) throws Exception {
 
-        //p.println("JOBSTATUS: " + context.getStatus());
-
         if (!"Waiting".equals(context.getStatus()) && !"Completed".equals(context.getStatus())) {
             return;
         }
 
         scan(session, context.getJob(), p, job);
+        p.println("========================================");
+        p.println("ACCOUNT ITEM SUGGESTED");
+        p.println("========================================");
+        p.println("Visited Jobs       : " + visitedJobs);
+
+        p.println("BaseWorking Count  : " + baseWorkingCount);
+        p.println("BaseWorking Ms     : " + baseWorkingMs);
+
+        p.println("Standard DT Count  : " + standardDtCount);
+        p.println("Standard DT Ms     : " + standardDtMs);
+
+        p.println("LastRule Count     : " + lastRuleCount);
+        p.println("LastRule Ms        : " + lastRuleMs);
+
+        p.println("Certification Cnt  : " + certificationCount);
+        p.println("Certification Ms   : " + certificationMs);
+
+        p.println("========================================");
     }
 
     @Override
@@ -51,8 +80,11 @@ public class AccountItemSuggested implements AccountItemSource {
     private void scan(SchedulerSession session, Job parent, PrintWriter pw, Job job)
             throws Exception {
 
+        visitedJobs++;
+
         String p = parent.getJobDefinition().getName();
         for (Job child : parent.getChildJobs()) {
+
             String c = child.getJobDefinition().getName();
             String stepName = child.getJobChainStep() == null ? null : child.getJobChainStep().getName();
             //pw.println("PARENT[" + parent.getJobId() + "] " + p + " -> CHILD[" + child.getJobId() + "] " + c + " STEP[" + stepName + "]");
@@ -78,9 +110,11 @@ public class AccountItemSuggested implements AccountItemSource {
     }
 
     void processStandardDt(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
-        //pw.println("Creating standard DT");
-        DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, job, context, "suggested", false);
+        long start = System.currentTimeMillis();
+        DataTransformerProcessor dt = new DataTransformerProcessor(session, child, false, pw, job, context, "suggested", false);
         stats.addDt(dt.getStats());
+        standardDtCount++;
+        standardDtMs += System.currentTimeMillis() - start;
     }
 
     boolean isStandardDt(String parentName, String childName) {
@@ -88,10 +122,11 @@ public class AccountItemSuggested implements AccountItemSource {
     }
 
     void processLastRule(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
-        //pw.println("Creating LastRule DT");
-        DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, job, context, "suggested", true);
+        long start = System.currentTimeMillis();
+        DataTransformerProcessor dt = new DataTransformerProcessor(session, child, false, pw, job, context, "suggested", true);
         stats.setTotalCollectedItems(stats.getTotalCollected() + dt.getTotalCollected());
-
+        lastRuleCount++;
+        lastRuleMs += System.currentTimeMillis() - start;
     }
 
     boolean isLastRule(String parentName, String childName, String childStepName) {
@@ -99,9 +134,11 @@ public class AccountItemSuggested implements AccountItemSource {
     }
 
     void processBaseWorking(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
-        //pw.println("Creating baseworking DT");
-        DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, job, context, "suggested", false);
+        long start = System.currentTimeMillis();
+        DataTransformerProcessor tot = new DataTransformerProcessor(session, child, true, pw, job, context, "suggested", false);
         stats.setTotalOpenItems(tot.getRuleSet1());
+        baseWorkingCount++;
+        baseWorkingMs += System.currentTimeMillis() - start;
     }
 
     boolean isBaseWorking(String parentName, String childName) {
@@ -109,14 +146,13 @@ public class AccountItemSuggested implements AccountItemSource {
     }
 
     private void processCertification(SchedulerSession session, Job child, PrintWriter p, Job job) throws Exception {
+        long start = System.currentTimeMillis();
         String certificationId = getParameter(child, "CERT_UNIQUE_ID");
 
-        if (certificationId == null) {
-            return;
-        }
-
-        //p.println("Cert ID: " + certificationId);
+        if (certificationId == null) return;
 
         fileWriter.writeItemsToFile(session, job, "certId", List.of(certificationId));
+        certificationCount++;
+        certificationMs += System.currentTimeMillis() - start;
     }
 }

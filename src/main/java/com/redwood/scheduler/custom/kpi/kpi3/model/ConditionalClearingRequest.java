@@ -4,9 +4,15 @@ import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ClearingResultProcessor;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
-import com.redwood.scheduler.custom.kpi.kpi3.service.RTXService;
+import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
+import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
+import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
+import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
 
 import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
@@ -25,11 +31,16 @@ public class ConditionalClearingRequest {
     private final CollectorStats stats;
     private final ResultFileWriter fileWriter;
     private final ClearingResultProcessor resultProcessor;
+    private final ScanStats scanStats;
+    private final Map<String, Long> sourceTimes = new HashMap<>();
+    private final Map<String, Integer> sourceCounts = new HashMap<>();
+    private int documentsWritten;
 
     public ConditionalClearingRequest(Job j)
             throws Exception {
         this.context = new AccountItemContext(j, j.getRunStart());
         this.stats = new CollectorStats();
+        this.scanStats = new ScanStats();
         this.fileWriter = new ResultFileWriter(context, "conditional");
         this.resultProcessor = new ClearingResultProcessor(fileWriter, RTXSchemas.CONDITIONAL);
         suggestionId = getLink(j);
@@ -39,16 +50,66 @@ public class ConditionalClearingRequest {
     public void collectChildren(SchedulerSession session, PrintWriter p, Job job)
             throws Exception {
         scan(session, context.getJob(), p, job);
+        p.println(
+                "ConditionalClearingRequest stats: " +
+                        scanStats +
+                        ",\ndocumentsWritten=" + documentsWritten +
+                        ",\ntotalOpenItems=" + stats.getTotalOpenItems() +
+                        ",\nselectedForClear=" + selectedForClear
+        );
+        p.println("SOURCE PERFORMANCE");
+
+        sourceTimes.entrySet()
+                .stream()
+                .sorted((a, b) ->
+                        Long.compare(
+                                b.getValue(),
+                                a.getValue()))
+                .forEach(e -> {
+
+                    String sourceName = e.getKey();
+                    long totalMs = e.getValue();
+                    int count = sourceCounts.get(sourceName);
+
+                    p.println(
+                            sourceName +
+                                    " | count=" + count +
+                                    " | totalMs=" + totalMs +
+                                    " | avgMs=" + (totalMs / count));
+                });
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job job)
             throws Exception {
         for (Job child : parent.getChildJobs()) {
+            scanStats.incrementVisitedJobs();
+            scanStats.jobIds(child.getJobId());
             String name = child.getJobDefinition().getMasterJobDefinition().getName();
             switch (name) {
-                case JOB_EXCEL -> processExcel(session, child, p, job);
-                case JOB_PREPARATION -> processPreparation(session, child, p, job);
-                case JOB_FB05 -> processFb05(session, child, p, job);
+                case JOB_EXCEL -> {
+                    scanStats.excelJob();
+                    long start = System.currentTimeMillis();
+                    processExcel(session, child, p, job);
+                    long elapsed = System.currentTimeMillis() - start;
+                    sourceTimes.merge("EXCEL", elapsed, Long::sum);
+                    sourceCounts.merge("EXCEL", 1, Integer::sum);
+                }
+                case JOB_PREPARATION -> {
+                    scanStats.preparationJob();
+                    long start = System.currentTimeMillis();
+                    processPreparation(session, child, p, job);
+                    long elapsed = System.currentTimeMillis() - start;
+                    sourceTimes.merge("PREP", elapsed, Long::sum);
+                    sourceCounts.merge("PREP", 1, Integer::sum);
+                }
+                case JOB_FB05 -> {
+                    scanStats.fb05Job();
+                    long start = System.currentTimeMillis();
+                    processFb05(session, child, p, job);
+                    long elapsed = System.currentTimeMillis() - start;
+                    sourceTimes.merge("FB05", elapsed, Long::sum);
+                    sourceCounts.merge("FB05", 1, Integer::sum);
+                }
                 default -> scan(session, child, p, job);
             }
         }
@@ -90,7 +151,9 @@ public class ConditionalClearingRequest {
     private void printSet(SchedulerSession session, Job j, String parameter, PrintWriter p, Job job, String name) throws Exception {
         if (!"Completed".equals(j.getStatus().getTranslationEN())) return;
 
-        fileWriter.writeItemsToFile(session,job,name,RTXService.getDocumentKeys(j,parameter,RTXSchemas.CONDITIONAL));
+        Set<String> keys = RTXService.getDocumentKeys(j,parameter,RTXSchemas.CONDITIONAL);
+        fileWriter.writeItemsToFile(session,job,name,keys);
+        documentsWritten += keys.size();
 
     }
 

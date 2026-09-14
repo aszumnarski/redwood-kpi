@@ -6,6 +6,7 @@ import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.custom.kpi.kpi3.config.AccountItemType;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
+import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 
 import java.io.PrintWriter;
 import java.util.List;

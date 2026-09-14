@@ -1,10 +1,9 @@
-package com.redwood.scheduler.custom.kpi.kpi3.service;
+package com.redwood.scheduler.custom.kpi.kpi3.rtx;
 
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.interfaces.TableParameter;
 import com.redwood.scheduler.api.rtx.RTXReader;
 import com.redwood.scheduler.api.rtx.RTXRow;
-import com.redwood.scheduler.custom.kpi.kpi3.model.RTXSchema;
 
 import java.io.PrintWriter;
 import java.util.*;

@@ -1,4 +1,4 @@
-package com.redwood.scheduler.custom.kpi.kpi3.model;
+package com.redwood.scheduler.custom.kpi.kpi3.rtx;
 
 public class RTXSchemas
 {

@@ -3,8 +3,8 @@ package com.redwood.scheduler.custom.kpi.kpi3.file;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.custom.kpi.kpi3.model.ClearingResult;
-import com.redwood.scheduler.custom.kpi.kpi3.model.RTXSchema;
-import com.redwood.scheduler.custom.kpi.kpi3.service.RTXService;
+import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchema;
+import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
 
 import java.io.PrintWriter;
 import java.util.HashMap;

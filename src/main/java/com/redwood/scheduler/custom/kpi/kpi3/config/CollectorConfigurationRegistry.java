@@ -1,8 +1,8 @@
-package com.redwood.scheduler.custom.kpi.kpi3.model;
+package com.redwood.scheduler.custom.kpi.kpi3.config;
 
 import java.util.Set;
 
-public final class CollectorConfigs
+public final class CollectorConfigurationRegistry
 {
     public static final Set<String> baseParentsLedger = Set.of("CUS_TD_BSC_AUTOCLEAR_WEA","CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_Original","CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH","CUS_TD_BSC_AUTOCLEAR_SHERPAX_new","CUS_TD_BSC_AUTOCLEAR_Cashmatching_E1P_US","CUS_SPD_BSC_AUTOCLEAR_SHERPAX_LDGRP","CUS_TD_BSC_AUTOCLEAR_SHERPAX_CASH_LDGRP_US");
     public static final Set<String> dtParentsLedger = Set.of("CUS_SPD_BSC_AUTOCLEAR_RULES_WEA_new","CUS_SPD_BSC_AUTOCLEAR_RULES_Sherpax_Global_new","CUS_SPD_BSC_AUTOCLEAR_RULES_Sherpax_Focus4_new","CUS_SPD_BSC_RULES_AUTOCLEAR_SHERPAX_CASH_Phase5");
