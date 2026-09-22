@@ -8,6 +8,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec;
 import com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService;
 import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.model.Reconciliation;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.model.ReportingRecord;
 import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
 
 import java.util.List;
@@ -39,26 +40,26 @@ public class VolumeAggregator
     }
 
 
-    static class Column
+    public static class Column
     {
         final String header;
-        final Function<Row, String> extractor;
-        Column(String header, Function<Row, String> extractor)
+        public final Function<ReportingRecord, String> extractor;
+        public Column(String header, Function<ReportingRecord, String> extractor)
         {
             this.header = header;
             this.extractor = extractor;
         }
     }
 
-    private static final List<Column> COLUMNS = java.util.Arrays.asList(
-            new Column("Period",           r -> nvl(r.period)),
-            new Column("Company Code",     r -> nvl(r.companyCode)),
-            new Column("Type",             r -> nvl(r.type)),
-            new Column("Total Open Item",  r -> String.valueOf(r.total)),
-            new Column("Proposed",         r -> String.valueOf(r.proposed)),
-            new Column("Cleared",          r -> String.valueOf(r.cleared)),
-            new Column("Error",            r -> String.valueOf(r.error)),
-            new Column("Account Item",     r -> nvl(r.accountGroup))
+    public static final List<Column> COLUMNS = java.util.Arrays.asList(
+            new Column("Period",           r -> nvl(r.getPeriod())),
+            new Column("Company Code",     r -> nvl(r.getCompanyCode())),
+            new Column("Type",             r -> nvl(r.getType())),
+            new Column("Total Open Item",  r -> String.valueOf(r.getTotal())),
+            new Column("Proposed",         r -> String.valueOf(r.getProposed())),
+            new Column("Cleared",          r -> String.valueOf(r.getCleared())),
+            new Column("Error",            r -> String.valueOf(r.getError())),
+            new Column("Account Item",     r -> nvl(r.getAccountGroup()))
     );
 
     private static String nvl(String s) { return s == null ? "" : s; }
@@ -80,7 +81,7 @@ public class VolumeAggregator
             filesMap.computeIfAbsent(fileKey, k -> new ArrayList<>()).add(parts[1]);
         }
 
-        Map<FileKey,Row> rows = collectRows(filesMap);
+        Map<FileKey,ReportingRecord> rows = collectRows(filesMap);
         if (rows.isEmpty()) return null;
 
         String fileName = JobParameterHelper.getParameter(job,"IN_FILENAME");
@@ -90,8 +91,8 @@ public class VolumeAggregator
             JobFileService.write(fos,getHeader());
             for(FileKey key:rows.keySet())
             {
-                Row row = rows.get(key);
-                if("B013100_TradeAR3rdParty_CFAVF".equals(row.accountGroup))
+                ReportingRecord row = rows.get(key);
+                if("B013100_TradeAR3rdParty_CFAVF".equals(row.getAccountGroup()))
                 {
                     out.println("WRITING: " + row.toCsv());
                 }
@@ -108,10 +109,10 @@ public class VolumeAggregator
         return COLUMNS.stream().map(c -> c.header).collect(Collectors.joining(";"));
     }
 
-    private Map<FileKey, Row> collectRows(Map<FileKey, List<String>> filesMap)
+    private Map<FileKey, ReportingRecord> collectRows(Map<FileKey, List<String>> filesMap)
             throws Exception
     {
-        Map<FileKey, Row> result = new HashMap<>();
+        Map<FileKey, ReportingRecord> result = new HashMap<>();
         Set<String> missingChains = new HashSet<>();
         Set<String> processedConditionalFiles = new HashSet<>();
 
@@ -165,7 +166,7 @@ public class VolumeAggregator
                 continue;
             }
 
-            Row row = new Row(key);
+            ReportingRecord row = new ReportingRecord(key);
 
             out.println("certId.isEmpty()=" + certId.isEmpty());
             if (!certId.isEmpty())
@@ -178,32 +179,32 @@ public class VolumeAggregator
                 }
                 String id = certificationSet.iterator().next();
                 Reconciliation recon = ReconciliationRepository.getStatusTotalsForCert(session,Long.parseLong(id));
-                row.total = recon.getTotal();
-                row.proposed = recon.getProposed();
-                row.selected = recon.getSelected();
-                row.cleared = recon.getCleared();
-                row.error = recon.getErrors();
+                row.setTotal(recon.getTotal());
+                row.setProposed(recon.getProposed());
+                row.setSelected(recon.getSelected());
+                row.setCleared(recon.getCleared());
+                row.setError(recon.getErrors());
             }
             else
             {
-                if (!total.isEmpty()) row.total = countUniqueLines(total);
-                if (!proposed.isEmpty()) row.proposed = countUniqueLines(proposed);
-                if (!selected.isEmpty()) row.selected = countUniqueLines(selected);
-                if (!cleared.isEmpty()) row.cleared = countUniqueLines(cleared);
-                if (!errors.isEmpty()) row.error = countUniqueLines(errors);
+                if (!total.isEmpty()) row.setTotal(countUniqueLines(total));
+                if (!proposed.isEmpty()) row.setProposed(countUniqueLines(proposed));
+                if (!selected.isEmpty()) row.setSelected(countUniqueLines(selected));
+                if (!cleared.isEmpty()) row.setCleared(countUniqueLines(cleared));
+                if (!errors.isEmpty()) row.setError(countUniqueLines(errors));
             }
             if (!missings.isEmpty()) missingChains.addAll(getUniqueLines(missings));
 
-            Row existing = result.get(key);
+            ReportingRecord existing = result.get(key);
 
             if(existing == null) {
                 result.put(key, row);
             } else {
                 out.println("Overriding current value for " + key);
                 if(!"conditional".equalsIgnoreCase(key.type)) throw new Exception ("Incorrect merge!");
-                existing.cleared = row.cleared;
-                existing.error = row.error;
-                existing.selected = row.selected;
+                existing.setCleared(row.getCleared());
+                existing.setError(row.getError());
+                existing.setSelected(row.getSelected());
             }
             out.println("====================================================================================");
         }
@@ -211,7 +212,7 @@ public class VolumeAggregator
         //if(!certIds.isEmpty())
 
         result.forEach((k,v) -> {
-            if("B013100_TradeAR3rdParty_CFAVF".equals(v.accountGroup))
+            if("B013100_TradeAR3rdParty_CFAVF".equals(v.getAccountGroup()))
             {
                 out.println("END COLLECTROWS: " + v.toCsv());
             }
@@ -220,7 +221,7 @@ public class VolumeAggregator
         return result;
     }
 
-    private void parseConditionalFile(List<String> files, Map<FileKey, Row> result) throws Exception
+    private void parseConditionalFile(List<String> files, Map<FileKey, ReportingRecord> result) throws Exception
     {
         for (String path : files)
         {
@@ -259,20 +260,20 @@ public class VolumeAggregator
                     );
 
                     out.println("parseConditionalFile.key: " + key);
-                    Row row = new Row(key);
+                    ReportingRecord row = new ReportingRecord(key);
 
-                    row.total = Integer.parseInt(cols[3]);
-                    row.proposed = Integer.parseInt(cols[4]);
+                    row.setTotal(Integer.parseInt(cols[3]));
+                    row.setProposed(Integer.parseInt(cols[4]));
 
                     out.println("ROW: " + row.toCsv());
-                    Row existing = result.get(key);
+                    ReportingRecord existing = result.get(key);
                     out.println("EXISTING: " + (existing == null ? "NULL" : existing.toCsv()));
                     if(existing == null) {
                         result.put(key, row);
                         out.println("ROW added...");
                     } else {
-                        existing.total = row.total;
-                        existing.proposed = row.proposed;
+                        existing.setTotal(row.getTotal());
+                        existing.setProposed(row.getProposed());
                         out.println("EXISTING updated...");
                     }
                 }
@@ -318,43 +319,6 @@ public class VolumeAggregator
             throws Exception
     {
         return getUniqueLines(paths).size();
-    }
-
-    class Row
-    {
-        final String period;
-        final String companyCode;
-        final String type;
-        final String accountGroup;
-        final String name;
-        int total;
-        int proposed;
-        int selected;
-        int cleared;
-        int error;
-
-        Row(FileKey key)
-        {
-            this.period = key.period();
-            this.companyCode = key.companyCode();
-            this.type = key.type();
-            this.accountGroup = key.accountGroup();
-            this.name = key.name();
-        }
-
-        boolean isEmpty()
-        {
-            return total == 0
-                    && proposed == 0
-                    && cleared == 0
-                    && error == 0;
-        }
-
-        String toCsv()
-        {
-            return COLUMNS.stream().map(c -> c.extractor.apply(this)).collect(Collectors.joining(";"));
-        }
-
     }
 
     FileKey getKey(String name)
