@@ -109,6 +109,7 @@ public class SuggestedClearingDIV implements AccountItemSource
             {
                 scanStats.incrementMatchedRules();
                 processRule(rule, child, session, p, job);
+                continue;
             }
 
             scan(session, child, p, job);

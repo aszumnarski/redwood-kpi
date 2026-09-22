@@ -3,6 +3,7 @@ package com.redwood.scheduler.custom.kpi.kpi3.file;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.JobFile;
 import com.redwood.scheduler.api.model.SchedulerSession;
+import com.redwood.scheduler.custom.kpi.kpi3.date.PeriodUtil;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemContext;
 
 import java.io.FileOutputStream;
@@ -31,7 +32,8 @@ public class ResultFileWriter
     }
 
     public String buildFileName(String name){
-        return FileKeyCodec.getFileName(new FileKey(context.getParentDate(), context.getCompanyCode(), context.getAccountGroup(), type, name));
+        String period = PeriodUtil.getPeriod(context.getParentDate());
+        return FileKeyCodec.getFileName(new FileKey(period, context.getCompanyCode(), context.getAccountGroup(), type, name));
     }
 
     public int writeItemsToNamedFile(SchedulerSession session, Job job, String fileName, Collection<String> items) throws Exception

@@ -2,8 +2,10 @@ package com.redwood.scheduler.custom.kpi.kpi3.model;
 
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
+import com.redwood.scheduler.api.model.enumeration.JobStatus;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ClearingResultProcessor;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
@@ -14,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
+
 
 public class ConditionalClearingRequest {
 
@@ -22,9 +24,9 @@ public class ConditionalClearingRequest {
     private static final String JOB_PREPARATION = "CUS_DT_BSC_CONDITIONAL_AUTOCLEAR_Clearing";
     private static final String JOB_FB05 = "FCA_SAP_Tran_FB05_Clearing";
 
-    private Long suggestionId;
-    private Long excelId;
-    private Long prepId;
+    private long excelId;
+    private long prepId;
+    private long clearingId;
 
     private int selectedForClear = 0;
     private final AccountItemContext context;
@@ -43,7 +45,6 @@ public class ConditionalClearingRequest {
         this.scanStats = new ScanStats();
         this.fileWriter = new ResultFileWriter(context, "conditional");
         this.resultProcessor = new ClearingResultProcessor(fileWriter, RTXSchemas.CONDITIONAL);
-        suggestionId = getLink(j);
 
     }
 
@@ -81,9 +82,12 @@ public class ConditionalClearingRequest {
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job job)
             throws Exception {
+        if (allSourcesFound()) return;
         for (Job child : parent.getChildJobs()) {
+            if (allSourcesFound()) return;
             scanStats.incrementVisitedJobs();
             scanStats.jobIds(child.getJobId());
+            if(child.getStatus() == JobStatus.Skipped) continue;
             String name = child.getJobDefinition().getMasterJobDefinition().getName();
             switch (name) {
                 case JOB_EXCEL -> {
@@ -115,19 +119,28 @@ public class ConditionalClearingRequest {
         }
     }
 
+    private boolean allSourcesFound(){
+        return excelId > 0 && prepId > 0 && clearingId > 0;
+    }
+
     private void processFb05(SchedulerSession session, Job child, PrintWriter p, Job job) throws Exception {
+        if (clearingId == 0) {
+            clearingId = child.getJobId();
+        } else {
+            throw new Exception("Clearing job 2x in chain " + child.getJobId());
+        }
         ClearingResult result = resultProcessor.process(session, child, job, selectedForClear,p);
         stats.apply(result);
     }
 
     private void processPreparation(SchedulerSession session, Job child, PrintWriter p, Job job) throws Exception {
-        if (prepId == null) {
+        if (prepId == 0) {
             prepId = child.getJobId();
         } else {
-            p.println("Prep dt file 2x in chain " + child.getJobId());
+            throw new Exception("Prep dt file 2x in chain " + child.getJobId());
         }
         String selectedStatus = child.getStatus().getTranslationEN();
-        String prepClearing = getParameter(child, "PrepClearingRowCount");
+        String prepClearing = JobParameterHelper.getParameter(child, "PrepClearingRowCount");
         if (selectedStatus.equals("Completed")) {
             selectedForClear = Integer.parseInt(prepClearing);
             if (selectedForClear > 0) printSet(session, child, "PrepClearing", p, job, "proposed");
@@ -135,13 +148,13 @@ public class ConditionalClearingRequest {
     }
 
     private void processExcel(SchedulerSession session, Job child, PrintWriter p, Job job) throws Exception {
-        if (excelId == null) {
+        if (excelId == 0) {
             excelId = child.getJobId();
         } else {
             throw new Exception("Excel file 2x in chain " + child.getJobId());
         }
         String excelStatus = child.getStatus().getTranslationEN();
-        String outLines = getParameter(child, "OUT_LINES");
+        String outLines = JobParameterHelper.getParameter(child, "OUT_LINES");
         if (excelStatus.equals("Completed")) {
             stats.setTotalOpenItems(Integer.parseInt(outLines));
             if (stats.getTotalOpenItems() > 0) printSet(session, child, "OUT_RTX", p, job, "total");
@@ -152,25 +165,8 @@ public class ConditionalClearingRequest {
         if (!"Completed".equals(j.getStatus().getTranslationEN())) return;
 
         Set<String> keys = RTXService.getDocumentKeys(j,parameter,RTXSchemas.CONDITIONAL);
-        fileWriter.writeItemsToFile(session,job,name,keys);
-        documentsWritten += keys.size();
+        documentsWritten += fileWriter.writeItemsToFile(session,job,name,keys);
 
     }
 
-    private Long getLink(Job j) {
-        String inExcel = getParameter(j, "IN_FILE_FROM_EP");
-
-        if (inExcel == null) {
-            return -1L;
-            //throw new RuntimeException("Missing IN_FILE_FROM_EP parameter for job " + j.getJobId() + " (" + j.getJobDefinition().getMasterJobDefinition().getName() + ")");
-        }
-
-        for (String part : inExcel.split("_", -1)) {
-            if (part.startsWith("ProcessID")) {
-                return Long.valueOf(part.replace("ProcessID", ""));
-            }
-        }
-
-        return -1L;
-    }
 }

@@ -50,6 +50,7 @@ public class AccountItemAutoLedger implements AccountItemSource
                 AccountItemSource source = rule.createSource(child, context.getParentDate());
                 source.collectChildren(session, p, extractorJob);
                 stats.add(source.getStats());
+                continue;
             }
 
             scan(session,child,p,extractorJob);

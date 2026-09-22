@@ -2,9 +2,7 @@ package com.redwood.scheduler.custom.kpi.kpi3.model;
 
 import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.model.Job;
-
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 
 public class AccountItemContext
 {
@@ -30,8 +28,8 @@ public class AccountItemContext
         this.runEndDate = job.getRunEnd();
         this.status = job.getStatus().getTranslationEN();
         this.name = job.getJobDefinition().getMasterJobDefinition().getName();
-        this.accountGroup = getAccountGroups(job);
-        this.companyCode = getParameter(job, "BUKRS");
+        this.accountGroup = JobParameterHelper.getAccountGroups(job);
+        this.companyCode = JobParameterHelper.getParameter(job, "BUKRS");
     }
 
     public Job getJob()

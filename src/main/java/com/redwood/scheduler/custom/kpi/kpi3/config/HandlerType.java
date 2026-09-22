@@ -11,48 +11,48 @@ public enum HandlerType
     CONDITIONAL_REVIEW
             {
                 @Override
-                public void handle(Job j, SchedulerSession session, PrintWriter p, Job parent)
+                public void handle(Job topLevelJob, SchedulerSession session, PrintWriter p, Job extractorJob)
                         throws Exception
                 {
-                    new ConditionalClearingSuggestion(j).collectActionItems(session, p, parent);
+                    new ConditionalClearingSuggestion(topLevelJob).collectActionItems(session, p, extractorJob);
                 }
             },
     CONDITIONAL_REQUEST
             {
                 @Override
-                public void handle(Job j, SchedulerSession session, PrintWriter p, Job parent)
+                public void handle(Job topLevelJob, SchedulerSession session, PrintWriter p, Job extractorJob)
                         throws Exception
                 {
-                    new ConditionalClearingRequest(j).collectChildren(session, p, parent);
+                    new ConditionalClearingRequest(topLevelJob).collectChildren(session, p, extractorJob);
                 }
             },
     AUTO
             {
                 @Override
-                public void handle(Job job, SchedulerSession session, PrintWriter p, Job extractorJob)
+                public void handle(Job topLevelJob, SchedulerSession session, PrintWriter p, Job extractorJob)
                         throws Exception
                 {
-                    new AutoClearing(job).collectActionItems(session, p, extractorJob);
+                    new AutoClearing(topLevelJob).collectActionItems(session, p, extractorJob);
                 }
             },
     RECON
             {
                 @Override
-                public void handle(Job j, SchedulerSession session, PrintWriter p, Job parent)
+                public void handle(Job topLevelJob, SchedulerSession session, PrintWriter p, Job extractorJob)
                         throws Exception
                 {
-                    new Recon(j).collectActionItems(session, p, parent);
+                    new Recon(topLevelJob).collectActionItems(session, p, extractorJob);
                 }
             },
     SUGGESTED
             {
                 @Override
-                public void handle(Job j, SchedulerSession session, PrintWriter p, Job parent)
+                public void handle(Job topLevelJob, SchedulerSession session, PrintWriter p, Job extractorJob)
                         throws Exception
                 {
-                    new SuggestedClearing(j).collectActionItems(session, p, parent);
+                    new SuggestedClearing(topLevelJob).collectActionItems(session, p, extractorJob);
                 }
             };
-    public abstract void handle(Job j, SchedulerSession session, PrintWriter p, Job parent)
+    public abstract void handle(Job topLevelJob, SchedulerSession session, PrintWriter p, Job extractorJob)
             throws Exception;
 }

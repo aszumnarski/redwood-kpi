@@ -2,6 +2,7 @@ package com.redwood.scheduler.custom.kpi.kpi3.file;
 
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.model.ClearingResult;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchema;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
@@ -10,8 +11,6 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
 public class ClearingResultProcessor
 {
@@ -34,9 +33,8 @@ public class ClearingResultProcessor
     {
         Long clearId = clearingJob.getJobId();
 
-        String okLines = getParameter(clearingJob, "OUT_DATA_OK_RTX");
-
-        String errorLines = getParameter(clearingJob, "OUT_DATA_ERROR_RTX");
+        String okLines = JobParameterHelper.getParameter(clearingJob, "OUT_DATA_OK_RTX");
+        String errorLines = JobParameterHelper.getParameter(clearingJob, "OUT_DATA_ERROR_RTX");
 
         Map<String, List<String>> matchings = RTXService.groupByKey(clearingJob, "IN_DATA_RTX", schema, writer);
 

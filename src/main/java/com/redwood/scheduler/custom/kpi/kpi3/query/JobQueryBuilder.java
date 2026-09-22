@@ -4,24 +4,22 @@ import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.JobDefinition;
 import com.redwood.scheduler.api.model.SchedulerSession;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.StringJoiner;
 
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
 public class JobQueryBuilder {
 
     public static String getQuery(SchedulerSession session, Job job)
             throws Exception
     {
-        int limit = Integer.parseInt(getParameter(job,"IN_LIMIT"));
-        String id = getParameter(job,"IN_LIMIT_ID");
+        int limit = Integer.parseInt(JobParameterHelper.getParameter(job,"IN_LIMIT"));
+        String id = JobParameterHelper.getParameter(job,"IN_LIMIT_ID");
         String chains = getChains(session,job);
-        DateTimeZone before = new DateTimeZone().parse(getParameter(job,"IN_BEFORE"),getParameter(job,"IN_FORMAT"));
-        DateTimeZone after = new DateTimeZone().parse(getParameter(job,"IN_AFTER"),getParameter(job,"IN_FORMAT"));
+        DateTimeZone before = new DateTimeZone().parse(JobParameterHelper.getParameter(job,"IN_BEFORE"),JobParameterHelper.getParameter(job,"IN_FORMAT"));
+        DateTimeZone after = new DateTimeZone().parse(JobParameterHelper.getParameter(job,"IN_AFTER"),JobParameterHelper.getParameter(job,"IN_FORMAT"));
         String LIMIT = limit > 0 ? " fetch first " + limit + " rows only" : "";
         String LIMITID = (id != null) ? " and j.JobId in (" + id + ")" : "";
         String DEFINITIONS = " and jd.Name in (" + chains + ")";
@@ -38,7 +36,7 @@ public class JobQueryBuilder {
     }
     public static String getChains(SchedulerSession session,Job job)
     {
-        String chains = getParameter(job,"IN_JOB_CHAINS");
+        String chains = JobParameterHelper.getParameter(job,"IN_JOB_CHAINS");
 
         if (chains != null && !chains.isBlank() && !"all".equalsIgnoreCase(chains)) return chains;
 
@@ -56,11 +54,11 @@ public class JobQueryBuilder {
     public static String getQueryById(SchedulerSession session, Job job)
             throws Exception
     {
-        int limit = Integer.parseInt(getParameter(job,"IN_LIMIT"));
-        String id = getParameter(job,"IN_LIMIT_ID");
+        int limit = Integer.parseInt(JobParameterHelper.getParameter(job,"IN_LIMIT"));
+        String id = JobParameterHelper.getParameter(job,"IN_LIMIT_ID");
         String chainsIds = getChainsUniqueIds(session,job);
-        DateTimeZone before = new DateTimeZone().parse(getParameter(job,"IN_BEFORE"),getParameter(job,"IN_FORMAT"));
-        DateTimeZone after = new DateTimeZone().parse(getParameter(job,"IN_AFTER"),getParameter(job,"IN_FORMAT"));
+        DateTimeZone before = new DateTimeZone().parse(JobParameterHelper.getParameter(job,"IN_BEFORE"),JobParameterHelper.getParameter(job,"IN_FORMAT"));
+        DateTimeZone after = new DateTimeZone().parse(JobParameterHelper.getParameter(job,"IN_AFTER"),JobParameterHelper.getParameter(job,"IN_FORMAT"));
         String LIMIT = limit > 0 ? " fetch first " + limit + " rows only" : "";
         String LIMITID = (id != null) ? " and j.JobId in (" + id + ")" : "";
         String DEFINITIONS = " and j.JobDefinition in (" + chainsIds + ")";
@@ -72,7 +70,7 @@ public class JobQueryBuilder {
 
     public static String getChainsUniqueIds(SchedulerSession session,Job job)
     {
-        String chains = getParameter(job,"IN_JOB_CHAINS");
+        String chains = JobParameterHelper.getParameter(job,"IN_JOB_CHAINS");
 
         if (chains != null && !chains.isBlank() && !"all".equalsIgnoreCase(chains)) return getJobDefinitionIds(session,chains);
 

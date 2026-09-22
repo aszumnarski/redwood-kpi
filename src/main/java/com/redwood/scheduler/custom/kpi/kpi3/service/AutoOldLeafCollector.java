@@ -14,15 +14,17 @@ import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
 
 import java.io.PrintWriter;
 
-public class LeafCollector implements AccountItemSource {
+public class AutoOldLeafCollector implements AccountItemSource {
     private final AccountItemContext context;
     private final ResultFileWriter fileWriter;
     private final ClearingResultProcessor clearingProcessor;
     private final CollectorConfig config;
     private final CollectorStats stats;
     private long dtMs;
+    private boolean baseWorkingFound;
+    private boolean fb05Found;
 
-    public LeafCollector(
+    public AutoOldLeafCollector(
             Job job,
             DateTimeZone parentDate,
             CollectorConfig config) throws Exception {
@@ -32,67 +34,60 @@ public class LeafCollector implements AccountItemSource {
         this.clearingProcessor = new ClearingResultProcessor(fileWriter, RTXSchemas.DT);
         this.config = config;
         this.stats = new CollectorStats();
+        baseWorkingFound = false;
+        fb05Found = false;
     }
 
-    public void collectChildren(SchedulerSession session, PrintWriter p, Job extractorJob)
-            throws Exception {
+    private boolean done()
+    {
+        return baseWorkingFound && fb05Found;
+    }
+
+    @Override
+    public void collectChildren(SchedulerSession session, PrintWriter p, Job extractorJob) throws Exception {
         scan(session, context.getJob(), p, extractorJob);
+        p.println("AutoOldLeafCollector dtMs=" + dtMs);
+        p.println("baseWorkingFound=" + baseWorkingFound + ", fb05Found=" + fb05Found);
 
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter pw, Job extractorJob)
             throws Exception {
 
-        String p = parent.getJobDefinition().getMasterJobDefinition().getName();
+        if (done()) return;
+
         for (Job child : parent.getChildJobs()) {
+            if (done()) return;
             String c = child.getJobDefinition().getMasterJobDefinition().getName();
-            if (isBaseWorkingParent(p, c)) {
+            if (isBaseWorking(c) && !baseWorkingFound) {
                 long start = System.currentTimeMillis();
                 DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, extractorJob, context, config.outputCategory(), false);
                 dtMs += System.currentTimeMillis() - start;
                 stats.setTotalOpenItems(tot.getRuleSet1());
-            } else if (isDtJob(p, c)) {
-                long start = System.currentTimeMillis();
-                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, config.outputCategory(), false);
-                dtMs += System.currentTimeMillis() - start;
-                stats.addDt(dt.getStats());
-            } else if (c.equals("CUS_TRN_COLLECT_RTX") && config.collectRtx()) {
-                long start = System.currentTimeMillis();
-                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, config.outputCategory(), false);
-                dtMs += System.currentTimeMillis() - start;
-                stats.setTotalCollectedItems(dt.getTotalCollected());
-            } else if (c.equals("FCA_SAP_Tran_FB05_Clearing")) {
+                baseWorkingFound = true;
+            } else if (c.equals("FCA_SAP_Tran_FB05_Clearing") && !fb05Found) {
                 long start = System.currentTimeMillis();
                 ClearingResult result = clearingProcessor.process(session, child, extractorJob, stats.getTotalCollected(),pw);
                 pw.println("ClearingProcessor ms=" + (System.currentTimeMillis() - start));
                 stats.apply(result);
+                fb05Found = true;
             }
             scan(session, child, pw, extractorJob);
         }
 
     }
 
-
-    private boolean isBaseWorkingParent(String p, String c) {
-        if (!c.contains("BaseWorking")) return false;
-        return config.unrestrictedBaseWorking() || config.baseParents().contains(p);
+    boolean isBaseWorking(String parentDefinitionName) {
+        return parentDefinitionName.startsWith("CUS_DT_BSC") && parentDefinitionName.toLowerCase().contains("baseworking");
     }
 
-    private boolean isDtJob(String p, String c) {
-        if (!c.startsWith("CUS_DT")) return false;
-        return !config.restrictDtParents() || config.dtParents().contains(p);
-    }
-
-
-    public CollectorStats getStats() {
-        return stats;
-    }
-
+    @Override
     public AccountItemContext getContext() {
         return context;
     }
 
-    public long getDtMs() {
-        return dtMs;
+    @Override
+    public CollectorStats getStats() {
+        return stats;
     }
 }

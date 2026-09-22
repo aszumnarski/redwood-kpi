@@ -4,11 +4,10 @@ import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.interfaces.TableParameter;
 import com.redwood.scheduler.api.rtx.RTXReader;
 import com.redwood.scheduler.api.rtx.RTXRow;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 
 import java.io.PrintWriter;
 import java.util.*;
-
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getTableParameter;
 
 public final class RTXService {
     public static Map<String, List<String>> groupByKey(Job job, String parameterName, RTXSchema schema, PrintWriter writer)
@@ -22,7 +21,8 @@ public final class RTXService {
                 String document = r.getString(schema.documentColumn());
                 String item = r.getString(schema.itemColumn());
                 String key = r.getString(schema.groupingColumn());
-                answer.computeIfAbsent(key, k -> new ArrayList<>()).add(document + item);
+                String fiscalYear = r.getString(schema.fiscalYearColumn());
+                answer.computeIfAbsent(key, k -> new ArrayList<>()).add(document + item + fiscalYear);
             }
         }
         return answer;
@@ -62,7 +62,7 @@ public final class RTXService {
     }
 
     public static RTXReader getReader(Job job, String parameterName) throws Exception {
-        TableParameter tp = getTableParameter(job, parameterName);
+        TableParameter tp = JobParameterHelper.getTableParameter(job, parameterName);
         if (tp == null) return null;
 
         return tp.getRTXReader();

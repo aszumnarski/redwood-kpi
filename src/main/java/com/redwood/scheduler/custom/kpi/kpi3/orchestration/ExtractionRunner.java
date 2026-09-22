@@ -3,6 +3,7 @@ package com.redwood.scheduler.custom.kpi.kpi3.orchestration;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.monitoring.FileStatistics;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.Stopwatch;
 import com.redwood.scheduler.custom.kpi.kpi3.service.Collector;
 import com.redwood.scheduler.custom.kpi.kpi3.service.WorkItemProcessor;
@@ -33,6 +34,9 @@ public class ExtractionRunner
     public void execute()
             throws Exception
     {
+        FileStatistics statistics = ResultFileWriter.getStatistics();
+        statistics.reset();
+
         Stopwatch stopwatch = new Stopwatch();
         String query = JobQueryBuilder.getQuery(session, extractorJob);
         out.println("Extractor.execute query: " + query);
@@ -48,12 +52,9 @@ public class ExtractionRunner
 
         ResultFileWriter writer = new ResultFileWriter();
 
-        writer.writeItemsToNamedFile(
-                session,
-                extractorJob,
-                "file_statistics.csv",
-                ResultFileWriter.getStatistics().toCsvRows()
-        );
+        if (!statistics.isEmpty()) {
+            writer.writeItemsToNamedFile(session, extractorJob, "file_statistics.csv", ResultFileWriter.getStatistics().toCsvRows());
+        }
 
     }
 }

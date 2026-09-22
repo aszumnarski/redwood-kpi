@@ -44,6 +44,20 @@ public class FileStatistics
         return misses;
     }
 
+    public void reset()
+    {
+        rowsByFile.clear();
+        writesByFile.clear();
+        lookups = 0;
+        hits = 0;
+        misses = 0;
+    }
+
+    public boolean isEmpty()
+    {
+        return rowsByFile.isEmpty();
+    }
+
     public void addRows(String fileName, long rows)
     {
         rowsByFile.merge(fileName, rows, Long::sum);

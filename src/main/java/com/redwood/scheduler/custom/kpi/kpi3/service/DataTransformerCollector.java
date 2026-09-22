@@ -5,6 +5,7 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.rtx.RTXReader;
 import com.redwood.scheduler.api.rtx.RTXRow;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemContext;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.Stopwatch;
@@ -14,9 +15,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.*;
-
-public class DataTransformerProcessor {
+public class DataTransformerCollector {
     private final AccountItemContext context;
     private final CollectorStats stats;
     private final Job childJob;
@@ -26,7 +25,7 @@ public class DataTransformerProcessor {
     private final String type;
 
 
-    public DataTransformerProcessor(SchedulerSession session, Job childJob, boolean collectRuleSet1, PrintWriter p, Job extractorJob, AccountItemContext parentContext, String type, boolean suggestedClearFlag) throws Exception {
+    public DataTransformerCollector(SchedulerSession session, Job childJob, boolean collectRuleSet1, PrintWriter p, Job extractorJob, AccountItemContext parentContext, String type, boolean suggestedClearFlag) throws Exception {
 
         this.context = parentContext;
         this.stats = new CollectorStats();
@@ -38,22 +37,22 @@ public class DataTransformerProcessor {
 
         //p.println("DataTransformerCollector created - " + childJob.getJobId());
 
-        if (!isCompleted(childJob)) return;
+        if (!JobParameterHelper.isCompleted(childJob)) return;
 
-        stats.setRuleSet1(getIntParameter(childJob, "RuleSet1RowCount"));
+        stats.setRuleSet1(JobParameterHelper.getIntParameter(childJob, "RuleSet1RowCount"));
         if (collectRuleSet1) printSet(session, "RuleSet1", p, "total", false);
 
-        stats.setAutoClear(getIntParameter(childJob, "AutoClearRowCount"));
+        stats.setAutoClear(JobParameterHelper.getIntParameter(childJob, "AutoClearRowCount"));
         if (stats.getAutoClear() != 0) printSet(session, "AutoClear", p, "proposed", false);
 
-        stats.setSuggestedClear(getIntParameter(childJob, "SuggestedClearRowCount"));
+        stats.setSuggestedClear(JobParameterHelper.getIntParameter(childJob, "SuggestedClearRowCount"));
         if (stats.getSuggestedClear() != 0) printSet(session, "SuggestedClear", p, "proposed", false);
 
-        stats.setTotalCollectedItems(getIntParameter(childJob, "OUT_ROWCOUNT"));
+        stats.setTotalCollectedItems(JobParameterHelper.getIntParameter(childJob, "OUT_ROWCOUNT"));
         if (stats.getTotalCollected() != 0 && !collectRuleSet1)
             printSet(session, "OUT_TABLE", p, "proposed", false);
 
-        if (!hasParameter(childJob, "SuggestedClearRowCount")) stats.setSuggestedClear(stats.getTotalCollected());
+        if (!JobParameterHelper.hasParameter(childJob, "SuggestedClearRowCount")) stats.setSuggestedClear(stats.getTotalCollected());
         if (suggestedClearFlag) printSet(session, "RuleSet1", p, "proposed", true);
 
         p.println(
@@ -90,8 +89,7 @@ public class DataTransformerProcessor {
             }
             long keyMs = stopwatch.elapsedMs();
             stopwatch.reset();
-            String fileName = fileWriter.buildFileName(name);
-            fileWriter.writeItemsToFile(session, extractorJob, fileName, documentKeys);
+            fileWriter.writeItemsToFile(session, extractorJob, name, documentKeys);
             long writeMs = stopwatch.elapsedMs();
             long totalElapsedMs = System.currentTimeMillis() - totalStart;
             long otherMs = totalElapsedMs - keyMs - writeMs;

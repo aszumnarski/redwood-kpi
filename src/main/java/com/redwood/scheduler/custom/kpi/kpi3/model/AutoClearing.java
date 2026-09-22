@@ -9,6 +9,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ParentDifferentChildRule;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
+import com.redwood.scheduler.custom.kpi.kpi3.service.LeafCollector;
 
 import java.io.PrintWriter;
 import java.util.HashMap;
@@ -111,7 +112,7 @@ public class AutoClearing {
                 });
     }
 
-    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob)
+    private void scanOld(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob)
             throws Exception {
         for (Job child : parent.getChildJobs()) {
 
@@ -123,6 +124,28 @@ public class AutoClearing {
             {
                 scanStats.incrementMatchedRules();
                 processRule(rule, child, session, p, extractorJob);
+            }
+
+            scanOld(session, child, p, extractorJob);
+        }
+    }
+
+    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob)
+            throws Exception {
+
+        for (Job child : parent.getChildJobs()) {
+
+            scanStats.incrementVisitedJobs();
+            scanStats.jobIds(child.getJobId());
+
+            Rule rule = findRule(parent, child, p);
+
+            if (rule != null)
+            {
+                scanStats.incrementMatchedRules();
+                processRule(rule, child, session, p, extractorJob);
+                continue;
+
             }
 
             scan(session, child, p, extractorJob);
@@ -141,6 +164,8 @@ public class AutoClearing {
         sourceTimes.merge(sourceName, elapsed, Long::sum);
         sourceCounts.merge(sourceName, 1, Integer::sum);
         stats.add(source.getStats());
+        if(source instanceof LeafCollector leaf) p.println("LeafCollector breakdown: " + "dtMs=" + leaf.getDtMs() + ", otherMs=" + (elapsed - leaf.getDtMs()));
+
     }
 
     private Rule findRule(Job parent, Job child,PrintWriter p)

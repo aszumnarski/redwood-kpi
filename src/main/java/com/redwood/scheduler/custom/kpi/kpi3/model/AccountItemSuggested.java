@@ -4,13 +4,12 @@ import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
-import com.redwood.scheduler.custom.kpi.kpi3.service.DataTransformerProcessor;
+import com.redwood.scheduler.custom.kpi.kpi3.service.DataTransformerCollector;
 
 import java.io.PrintWriter;
 import java.util.List;
-
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
 public class AccountItemSuggested implements AccountItemSource {
     private static final List<String> BASE_PARENTS = List.of("CUS_TD_BSC_SuggestedClearing_OneSided_MASTER_SHERPAX", "CUS_TD_BSC_SuggestedClearing_OneSided_MASTER");
@@ -88,7 +87,7 @@ public class AccountItemSuggested implements AccountItemSource {
             String c = child.getJobDefinition().getName();
             String stepName = child.getJobChainStep() == null ? null : child.getJobChainStep().getName();
             //pw.println("PARENT[" + parent.getJobId() + "] " + p + " -> CHILD[" + child.getJobId() + "] " + c + " STEP[" + stepName + "]");
-
+/*
             if (isBaseWorking(p, c)) {
                 processBaseWorking(session, child, pw, job);
             } else if (isLastRule(p, c, stepName)) {
@@ -97,8 +96,9 @@ public class AccountItemSuggested implements AccountItemSource {
             } else if (isStandardDt(p, c)) {
                 processStandardDt(session, child, pw, job);
                 continue;
-            } else if (isCertification(p,c)) {
+            } else */if (isCertification(p,c)) {
                 processCertification(session, child, pw, job);
+                continue;
             }
 
             scan(session, child, pw, job);
@@ -111,7 +111,7 @@ public class AccountItemSuggested implements AccountItemSource {
 
     void processStandardDt(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
         long start = System.currentTimeMillis();
-        DataTransformerProcessor dt = new DataTransformerProcessor(session, child, false, pw, job, context, "suggested", false);
+        DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, job, context, "suggested", false);
         stats.addDt(dt.getStats());
         standardDtCount++;
         standardDtMs += System.currentTimeMillis() - start;
@@ -123,7 +123,7 @@ public class AccountItemSuggested implements AccountItemSource {
 
     void processLastRule(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
         long start = System.currentTimeMillis();
-        DataTransformerProcessor dt = new DataTransformerProcessor(session, child, false, pw, job, context, "suggested", true);
+        DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, job, context, "suggested", true);
         stats.setTotalCollectedItems(stats.getTotalCollected() + dt.getTotalCollected());
         lastRuleCount++;
         lastRuleMs += System.currentTimeMillis() - start;
@@ -135,7 +135,7 @@ public class AccountItemSuggested implements AccountItemSource {
 
     void processBaseWorking(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
         long start = System.currentTimeMillis();
-        DataTransformerProcessor tot = new DataTransformerProcessor(session, child, true, pw, job, context, "suggested", false);
+        DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, job, context, "suggested", false);
         stats.setTotalOpenItems(tot.getRuleSet1());
         baseWorkingCount++;
         baseWorkingMs += System.currentTimeMillis() - start;
@@ -147,7 +147,7 @@ public class AccountItemSuggested implements AccountItemSource {
 
     private void processCertification(SchedulerSession session, Job child, PrintWriter p, Job job) throws Exception {
         long start = System.currentTimeMillis();
-        String certificationId = getParameter(child, "CERT_UNIQUE_ID");
+        String certificationId = JobParameterHelper.getParameter(child, "CERT_UNIQUE_ID");
 
         if (certificationId == null) return;
 

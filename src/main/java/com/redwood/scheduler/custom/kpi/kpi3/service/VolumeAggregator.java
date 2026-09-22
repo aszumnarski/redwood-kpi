@@ -4,6 +4,9 @@ import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.JobFile;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.custom.kpi.kpi3.file.FileKey;
+import com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec;
+import com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.model.Reconciliation;
 import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
 
@@ -19,11 +22,6 @@ import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
-
-import static com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec.parseFileName;
-import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
-import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
 public class VolumeAggregator
 {
@@ -68,32 +66,37 @@ public class VolumeAggregator
     public JobFile collect()
             throws Exception
     {
-        String files = getParameter(job,"IN_FILES");
+        String files = JobParameterHelper.getParameter(job,"IN_FILES");
         if(files.length() < 10) return null;
         Map<FileKey,List<String>> filesMap = new HashMap<>();
 
         for(String file : files.split(";",-1))
         {
-            //out.println("processing: " + file);
+            out.println("processing: " + file);
             String[] parts = file.split("=",-1);
-            //out.println(parts[0]);
+            out.println("will produce file key from: " + parts[0]);
             FileKey fileKey = getKey(parts[0]);
-            //out.println(fileKey);
+            out.println("File key is:" + fileKey);
             filesMap.computeIfAbsent(fileKey, k -> new ArrayList<>()).add(parts[1]);
         }
 
         Map<FileKey,Row> rows = collectRows(filesMap);
         if (rows.isEmpty()) return null;
 
-        String fileName = getParameter(job,"IN_FILENAME");
-        JobFile jf = createJobFile(session, job, fileName);
+        String fileName = JobParameterHelper.getParameter(job,"IN_FILENAME");
+        JobFile jf = JobFileService.createJobFile(session, job, fileName);
         try (FileOutputStream fos = new FileOutputStream(jf.getFileName()))
         {
-            write(fos,getHeader());
+            JobFileService.write(fos,getHeader());
             for(FileKey key:rows.keySet())
             {
                 Row row = rows.get(key);
-                write(fos, row.toCsv());
+                if("B013100_TradeAR3rdParty_CFAVF".equals(row.accountGroup))
+                {
+                    out.println("WRITING: " + row.toCsv());
+                }
+                if(row.isEmpty()) continue;
+                JobFileService.write(fos, row.toCsv());
             }
         }
         return jf;
@@ -110,8 +113,12 @@ public class VolumeAggregator
     {
         Map<FileKey, Row> result = new HashMap<>();
         Set<String> missingChains = new HashSet<>();
+        Set<String> processedConditionalFiles = new HashSet<>();
+
         for (FileKey key : filesMap.keySet())
         {
+            out.println("collectRows looping key: " + key);
+            List<String> conditional = new ArrayList<>();
             List<String> total = new ArrayList<>();
             List<String> proposed = new ArrayList<>();
             List<String> selected = new ArrayList<>();
@@ -121,6 +128,7 @@ public class VolumeAggregator
             List<String> certId = new ArrayList<>();
             for (String path : filesMap.get(key))
             {
+                out.println("Allocating path: " + path);
                 if (path.endsWith("total.csv")) total.add(path);
                 else if (path.endsWith("proposed.csv")) proposed.add(path);
                 else if (path.endsWith("selected.csv")) selected.add(path);
@@ -128,18 +136,38 @@ public class VolumeAggregator
                 else if (path.endsWith("errors.csv")) errors.add(path);
                 else if (path.endsWith("missing_chains.csv")) missings.add(path);
                 else if (path.endsWith("certId.csv")) certId.add(path);
+                else if (path.endsWith("conditional_summary.csv")) conditional.add(path);
                 else out.println("file name error: " + path);
             }
 
-            boolean hasAnyKpiFile = !(total.isEmpty() && proposed.isEmpty() && selected.isEmpty() && cleared.isEmpty() && errors.isEmpty() && certId.isEmpty());
+            boolean hasAnyKpiFile = !(conditional.isEmpty() && total.isEmpty() && proposed.isEmpty() && selected.isEmpty() && cleared.isEmpty() && errors.isEmpty() && certId.isEmpty());
+            out.println("hasAnyKpiFile=" + hasAnyKpiFile);
             if (!hasAnyKpiFile)
             {
                 if (!missings.isEmpty()) missingChains.addAll(getUniqueLines(missings));
                 continue;
             }
+            out.println("conditional.isEmpty()=" + conditional.isEmpty());
+            if (!conditional.isEmpty())
+            {
+                String conditionalFile = conditional.get(0);
+
+                if (processedConditionalFiles.add(conditionalFile))
+                {
+                    parseConditionalFile(conditional, result);
+                }
+
+                if (!missings.isEmpty())
+                {
+                    missingChains.addAll(getUniqueLines(missings));
+                }
+                out.println("====================================================================================");
+                continue;
+            }
 
             Row row = new Row(key);
 
+            out.println("certId.isEmpty()=" + certId.isEmpty());
             if (!certId.isEmpty())
             {
                 Set<String> certificationSet = getUniqueLines(certId);
@@ -155,7 +183,6 @@ public class VolumeAggregator
                 row.selected = recon.getSelected();
                 row.cleared = recon.getCleared();
                 row.error = recon.getErrors();
-                if (!missings.isEmpty()) missingChains.addAll(getUniqueLines(missings));
             }
             else
             {
@@ -164,24 +191,105 @@ public class VolumeAggregator
                 if (!selected.isEmpty()) row.selected = countUniqueLines(selected);
                 if (!cleared.isEmpty()) row.cleared = countUniqueLines(cleared);
                 if (!errors.isEmpty()) row.error = countUniqueLines(errors);
-                if (!missings.isEmpty()) missingChains.addAll(getUniqueLines(missings));
             }
-            result.put(key, row);
+            if (!missings.isEmpty()) missingChains.addAll(getUniqueLines(missings));
+
+            Row existing = result.get(key);
+
+            if(existing == null) {
+                result.put(key, row);
+            } else {
+                out.println("Overriding current value for " + key);
+                if(!"conditional".equalsIgnoreCase(key.type)) throw new Exception ("Incorrect merge!");
+                existing.cleared = row.cleared;
+                existing.error = row.error;
+                existing.selected = row.selected;
+            }
+            out.println("====================================================================================");
         }
         if(!missingChains.isEmpty()) createMissingsFile(missingChains);
         //if(!certIds.isEmpty())
+
+        result.forEach((k,v) -> {
+            if("B013100_TradeAR3rdParty_CFAVF".equals(v.accountGroup))
+            {
+                out.println("END COLLECTROWS: " + v.toCsv());
+            }
+        });
+
         return result;
     }
+
+    private void parseConditionalFile(List<String> files, Map<FileKey, Row> result) throws Exception
+    {
+        for (String path : files)
+        {
+            String[] parts = path.split(":", -1);
+
+            JobFile jf = session.getJobByJobId(Long.parseLong(parts[1])).getJobFileByName(parts[2]);
+
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(jf.getInputStream(), ENCODING)))
+            {
+                br.readLine(); // header
+
+                String line;
+
+                while ((line = br.readLine()) != null)
+                {
+                    String[] cols = line.split(";", -1);
+
+                    if(cols.length < 6)
+                    {
+                        err.println("Invalid conditional line: [" + line + "]");
+                        continue;
+                    }
+
+                    if ("Period".equalsIgnoreCase(cols[0]))
+                    {
+                        err.println("Additional header conditional line: [" + line + "]");
+                        continue;
+                    }
+
+                    FileKey key = new FileKey(
+                            cols[0], // period
+                            cols[1], // company code
+                            cols[5], // account group
+                            cols[2].toLowerCase(), // type
+                            cols[5]  // name
+                    );
+
+                    out.println("parseConditionalFile.key: " + key);
+                    Row row = new Row(key);
+
+                    row.total = Integer.parseInt(cols[3]);
+                    row.proposed = Integer.parseInt(cols[4]);
+
+                    out.println("ROW: " + row.toCsv());
+                    Row existing = result.get(key);
+                    out.println("EXISTING: " + (existing == null ? "NULL" : existing.toCsv()));
+                    if(existing == null) {
+                        result.put(key, row);
+                        out.println("ROW added...");
+                    } else {
+                        existing.total = row.total;
+                        existing.proposed = row.proposed;
+                        out.println("EXISTING updated...");
+                    }
+                }
+            }
+        }
+    }
+
     private void createMissingsFile(Set<String> missingChains)
             throws Exception
     {
         String fileName = "missing_chains.csv";
-        JobFile jf = createJobFile(session, job, fileName);
+        JobFile jf = JobFileService.createJobFile(session, job, fileName);
         try (FileOutputStream fos = new FileOutputStream(jf.getFileName()))
         {
             for(String chain:missingChains)
             {
-                write(fos, chain);
+                JobFileService.write(fos, chain);
             }
         }
     }
@@ -234,6 +342,14 @@ public class VolumeAggregator
             this.name = key.name();
         }
 
+        boolean isEmpty()
+        {
+            return total == 0
+                    && proposed == 0
+                    && cleared == 0
+                    && error == 0;
+        }
+
         String toCsv()
         {
             return COLUMNS.stream().map(c -> c.extractor.apply(this)).collect(Collectors.joining(";"));
@@ -244,13 +360,21 @@ public class VolumeAggregator
     FileKey getKey(String name)
             throws Exception
     {
-        String periods = getParameter(job,"IN_PERIODS");
-        int periodInt = Integer.parseInt(periods);
+        if("missing_chains.csv".equals(name)) return specialKey("missing");
+        if ("conditional_summary.csv".equals(name)) return specialKey("conditional");
+        if ("file_statistics.csv".equals(name)) return specialKey("statistics");
+
+        String periods = JobParameterHelper.getParameter(job,"IN_PERIODS");
+        boolean singlePeriod = "1".equals(periods);
         int idx = name.indexOf("_");
-        if(idx == -1) throw new Exception("Illegal name!");
-        if(periodInt == 1) idx = -1;
+        if(idx == -1) throw new Exception("Illegal name! " + name + " names have to include '_' .");
+        if(singlePeriod) idx = -1;
         String nameNoIndex = name.substring(idx + 1);
-        if("missing_chains.csv".equals(nameNoIndex)) return new FileKey("missing", "missing", "missing", "missing", "missing");
-        return parseFileName(nameNoIndex);
+        return FileKeyCodec.parseFileName(nameNoIndex);
+    }
+
+    private FileKey specialKey(String value)
+    {
+        return new FileKey(value, value, value, value, value);
     }
 }

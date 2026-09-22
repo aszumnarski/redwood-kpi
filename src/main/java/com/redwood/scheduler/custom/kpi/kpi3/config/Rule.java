@@ -8,4 +8,6 @@ public interface Rule
 {
     boolean matches(Job parent, Job child);
     AccountItemSource createSource(Job child, DateTimeZone runStartDate) throws Exception;
+
+    AccountItemType accountItemType();
 }

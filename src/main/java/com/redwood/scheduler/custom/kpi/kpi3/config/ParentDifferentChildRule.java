@@ -45,4 +45,9 @@ public class ParentDifferentChildRule implements Rule
             case SUGGESTED_AI -> null;
         };
     }
+
+    @Override
+    public AccountItemType accountItemType() {
+        return type;
+    }
 }

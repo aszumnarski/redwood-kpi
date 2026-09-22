@@ -2,14 +2,12 @@ package com.redwood.scheduler.custom.kpi.kpi3.service;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.custom.kpi.kpi3.config.JobDefinitionRegistry;
 import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
+import com.redwood.scheduler.custom.kpi.kpi3.date.PeriodUtil;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.model.WorkItem;
 
 import java.util.*;
 import java.io.PrintWriter;
-
-import static com.redwood.scheduler.custom.kpi.kpi3.date.PeriodUtil.getPeriod;
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getAccountGroups;
-import static com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper.getParameter;
 
 public class Collector
 {
@@ -36,9 +34,9 @@ public class Collector
         if (type == JobType.UNKNOWN) { unknownJobs++; }
         typeCounts.merge(type, 1, Integer::sum);
 
-        String period = getPeriod(j.getRunStart());
-        String bukrs = getParameter(j,"BUKRS");
-        String accountGroup = getAccountGroups(j);
+        String period = PeriodUtil.getPeriod(j.getRunStart());
+        String bukrs = JobParameterHelper.getParameter(j,"BUKRS");
+        String accountGroup = JobParameterHelper.getAccountGroups(j);
         workItems.add(new WorkItem(period,type,bukrs,accountGroup,j));
     }
 
