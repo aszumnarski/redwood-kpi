@@ -2,16 +2,9 @@ package com.redwood.scheduler.custom.kpi.kpi3.reporting.model;
 
 import com.redwood.scheduler.custom.kpi.kpi3.file.FileKey;
 
-import java.util.stream.Collectors;
-
-import com.redwood.scheduler.custom.kpi.kpi3.service.VolumeAggregator;
-
 public class ReportingRecord {
 
-    private final String period;
-    private final String companyCode;
-    private final String type;
-    private final String accountGroup;
+    private final ReportingKey reportingKey;
     private final String name;
     private int total;
     private int proposed;
@@ -20,10 +13,7 @@ public class ReportingRecord {
     private int error;
 
     public ReportingRecord(FileKey key) {
-        this.period = key.period();
-        this.companyCode = key.companyCode();
-        this.type = key.type();
-        this.accountGroup = key.accountGroup();
+        this.reportingKey = ReportingKey.from(key);
         this.name = key.name();
     }
 
@@ -31,24 +21,24 @@ public class ReportingRecord {
         return total == 0 && proposed == 0 && cleared == 0 && error == 0;
     }
 
-    public String toCsv() {
-        return VolumeAggregator.COLUMNS.stream().map(c -> c.extractor.apply(this)).collect(Collectors.joining(";"));
+    public ReportingKey getReportingKey(){
+        return reportingKey;
     }
 
     public String getPeriod() {
-        return period;
+        return reportingKey.getPeriod();
     }
 
     public String getCompanyCode() {
-        return companyCode;
+        return reportingKey.getCompanyCode();
     }
 
     public String getType() {
-        return type;
+        return reportingKey.getType();
     }
 
     public String getAccountGroup() {
-        return accountGroup;
+        return reportingKey.getAccountGroup();
     }
 
     public int getError() {
@@ -91,5 +81,18 @@ public class ReportingRecord {
         this.selected = selected;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String toString()
+    {
+        return reportingKey + ";"
+                + total + ";"
+                + proposed + ";"
+                + cleared + ";"
+                + error;
+    }
 
 }

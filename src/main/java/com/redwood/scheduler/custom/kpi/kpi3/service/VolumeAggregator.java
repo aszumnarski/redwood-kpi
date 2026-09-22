@@ -8,6 +8,8 @@ import com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec;
 import com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService;
 import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.model.Reconciliation;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.csv.ReportingCsvWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.model.ReportingKey;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.model.ReportingRecord;
 import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
 
@@ -17,8 +19,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.FileOutputStream;
@@ -39,31 +39,6 @@ public class VolumeAggregator
         this.err = err;
     }
 
-
-    public static class Column
-    {
-        final String header;
-        public final Function<ReportingRecord, String> extractor;
-        public Column(String header, Function<ReportingRecord, String> extractor)
-        {
-            this.header = header;
-            this.extractor = extractor;
-        }
-    }
-
-    public static final List<Column> COLUMNS = java.util.Arrays.asList(
-            new Column("Period",           r -> nvl(r.getPeriod())),
-            new Column("Company Code",     r -> nvl(r.getCompanyCode())),
-            new Column("Type",             r -> nvl(r.getType())),
-            new Column("Total Open Item",  r -> String.valueOf(r.getTotal())),
-            new Column("Proposed",         r -> String.valueOf(r.getProposed())),
-            new Column("Cleared",          r -> String.valueOf(r.getCleared())),
-            new Column("Error",            r -> String.valueOf(r.getError())),
-            new Column("Account Item",     r -> nvl(r.getAccountGroup()))
-    );
-
-    private static String nvl(String s) { return s == null ? "" : s; }
-
     public JobFile collect()
             throws Exception
     {
@@ -81,44 +56,43 @@ public class VolumeAggregator
             filesMap.computeIfAbsent(fileKey, k -> new ArrayList<>()).add(parts[1]);
         }
 
-        Map<FileKey,ReportingRecord> rows = collectRows(filesMap);
+        Map<ReportingKey,ReportingRecord> rows = collectRows(filesMap);
         if (rows.isEmpty()) return null;
 
         String fileName = JobParameterHelper.getParameter(job,"IN_FILENAME");
         JobFile jf = JobFileService.createJobFile(session, job, fileName);
         try (FileOutputStream fos = new FileOutputStream(jf.getFileName()))
         {
-            JobFileService.write(fos,getHeader());
-            for(FileKey key:rows.keySet())
+            JobFileService.write(fos, ReportingCsvWriter.getHeader());
+            for(ReportingKey key:rows.keySet())
             {
                 ReportingRecord row = rows.get(key);
                 if("B013100_TradeAR3rdParty_CFAVF".equals(row.getAccountGroup()))
                 {
-                    out.println("WRITING: " + row.toCsv());
+                    out.println("WRITING: " + ReportingCsvWriter.toCsv(row));
                 }
                 if(row.isEmpty()) continue;
-                JobFileService.write(fos, row.toCsv());
+                JobFileService.write(fos, ReportingCsvWriter.toCsv(row));
             }
         }
         return jf;
     }
 
 
-    String getHeader()
-    {
-        return COLUMNS.stream().map(c -> c.header).collect(Collectors.joining(";"));
-    }
 
-    private Map<FileKey, ReportingRecord> collectRows(Map<FileKey, List<String>> filesMap)
+
+    private Map<ReportingKey, ReportingRecord> collectRows(Map<FileKey, List<String>> filesMap)
             throws Exception
     {
-        Map<FileKey, ReportingRecord> result = new HashMap<>();
+        Map<ReportingKey, ReportingRecord> result = new HashMap<>();
         Set<String> missingChains = new HashSet<>();
         Set<String> processedConditionalFiles = new HashSet<>();
 
         for (FileKey key : filesMap.keySet())
         {
             out.println("collectRows looping key: " + key);
+            ReportingKey reportingKey = ReportingKey.from(key);
+
             List<String> conditional = new ArrayList<>();
             List<String> total = new ArrayList<>();
             List<String> proposed = new ArrayList<>();
@@ -195,10 +169,10 @@ public class VolumeAggregator
             }
             if (!missings.isEmpty()) missingChains.addAll(getUniqueLines(missings));
 
-            ReportingRecord existing = result.get(key);
+            ReportingRecord existing = result.get(reportingKey);
 
             if(existing == null) {
-                result.put(key, row);
+                result.put(reportingKey, row);
             } else {
                 out.println("Overriding current value for " + key);
                 if(!"conditional".equalsIgnoreCase(key.type)) throw new Exception ("Incorrect merge!");
@@ -214,14 +188,14 @@ public class VolumeAggregator
         result.forEach((k,v) -> {
             if("B013100_TradeAR3rdParty_CFAVF".equals(v.getAccountGroup()))
             {
-                out.println("END COLLECTROWS: " + v.toCsv());
+                out.println("END COLLECTROWS: " + ReportingCsvWriter.toCsv(v));
             }
         });
 
         return result;
     }
 
-    private void parseConditionalFile(List<String> files, Map<FileKey, ReportingRecord> result) throws Exception
+    private void parseConditionalFile(List<String> files, Map<ReportingKey, ReportingRecord> result) throws Exception
     {
         for (String path : files)
         {
@@ -259,17 +233,19 @@ public class VolumeAggregator
                             cols[5]  // name
                     );
 
+                    ReportingKey reportingKey = ReportingKey.from(key);
+
                     out.println("parseConditionalFile.key: " + key);
                     ReportingRecord row = new ReportingRecord(key);
 
                     row.setTotal(Integer.parseInt(cols[3]));
                     row.setProposed(Integer.parseInt(cols[4]));
 
-                    out.println("ROW: " + row.toCsv());
-                    ReportingRecord existing = result.get(key);
-                    out.println("EXISTING: " + (existing == null ? "NULL" : existing.toCsv()));
+                    out.println("ROW: " + ReportingCsvWriter.toCsv(row));
+                    ReportingRecord existing = result.get(reportingKey);
+                    out.println("EXISTING: " + (existing == null ? "NULL" : ReportingCsvWriter.toCsv(existing)));
                     if(existing == null) {
-                        result.put(key, row);
+                        result.put(reportingKey, row);
                         out.println("ROW added...");
                     } else {
                         existing.setTotal(row.getTotal());
