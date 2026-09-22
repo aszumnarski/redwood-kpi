@@ -54,7 +54,9 @@ public class WorkItemProcessor
                             : item.getAccountGroup().split(",").length;
 
             Stopwatch stopwatch = new Stopwatch();
+
             processWorkItem(item, session, extractorJob, p);
+
             long elapsedMs = stopwatch.elapsedMs();
 
             totalMs += elapsedMs;
@@ -84,6 +86,10 @@ public class WorkItemProcessor
             counter++;
         }
 
+        printSummary(p, counter, totalMs, minMs, maxMs,slowestItem, slowestMs,definitionTimes,definitionCounts,accountGroupTimes,accountGroupCounts);
+    }
+
+    private void printSummary(PrintWriter p, int counter, long totalMs, long minMs, long maxMs, WorkItem slowestItem, long slowestMs,Map<String, Long> definitionTimes,Map<String, Integer> definitionCounts,Map<String, Long> accountGroupTimes,Map<String, Integer> accountGroupCounts){
         p.println();
         p.println("========================================");
         p.println("PROCESSING SUMMARY");

@@ -11,6 +11,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.monitoring.AccountItemGlStatistics;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
+import com.redwood.scheduler.custom.kpi.kpi3.service.JobTreeWalker;
 
 import java.io.PrintWriter;
 import java.util.List;
@@ -40,7 +41,36 @@ public class AccountItemGL implements AccountItemSource {
     public void collectChildren(SchedulerSession session, PrintWriter p, Job extractorJob)
             throws Exception {
         long start = System.currentTimeMillis();
-        scan(session, context.getJob(), p, extractorJob);
+
+        //scan(session, context.getJob(), p, extractorJob);
+
+        JobTreeWalker.walk(context.getJob(),
+                (parent, child) -> {
+
+                    visitedJobs++;
+                    Rule rule = findRule(parent, child);
+
+                    if (rule != null) {
+                        AccountItemSource source = rule.createSource(child, context.getParentDate());
+                        source.collectChildren(session, p, extractorJob);
+                        stats.add(source.getStats());
+                        return JobTreeWalker.WalkResult.SKIP_SUBTREE;
+                    }
+
+                    String parentName = parent.getJobDefinition().getMasterJobDefinition().getName();
+                    String childName = child.getJobDefinition().getMasterJobDefinition().getName();
+
+                    if (isMergeRTX(parentName, childName)) {
+
+                        Set<String> keys = RTXService.getDocumentKeys(child, "OUT_TABLE", RTXSchemas.DT);
+                        stats.setTotalOpenItems(fileWriter.writeItemsToFile(session, extractorJob, "proposed", keys));
+
+                        return JobTreeWalker.WalkResult.STOP;
+                    }
+
+                    return JobTreeWalker.WalkResult.CONTINUE;
+                });
+
         elapsedMs = System.currentTimeMillis() - start;
     }
 
@@ -55,6 +85,8 @@ public class AccountItemGL implements AccountItemSource {
     public AccountItemGlStatistics getStatistics() {
         return new AccountItemGlStatistics(context.getJob().getJobId(), context.getAccountGroup(), elapsedMs, visitedJobs, stats);
     }
+
+    /*
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob)
             throws Exception {
@@ -87,6 +119,8 @@ public class AccountItemGL implements AccountItemSource {
             scan(session, child, p, extractorJob);
         }
     }
+
+     */
 
     private Rule findRule(Job parent, Job child) {
         for (Rule rule : RULES) {
