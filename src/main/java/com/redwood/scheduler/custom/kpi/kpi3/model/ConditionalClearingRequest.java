@@ -55,7 +55,7 @@ public class ConditionalClearingRequest {
                 "ConditionalClearingRequest stats: " +
                         scanStats +
                         ",\ndocumentsWritten=" + documentsWritten +
-                        ",\ntotalOpenItems=" + stats.getTotalOpenItems() +
+                        ",\ntotalOpenItems=" + stats.getOpen() +
                         ",\nselectedForClear=" + selectedForClear
         );
         p.println("SOURCE PERFORMANCE");
@@ -129,7 +129,7 @@ public class ConditionalClearingRequest {
         } else {
             throw new Exception("Clearing job 2x in chain " + child.getJobId());
         }
-        ClearingResult result = resultProcessor.process(session, child, job, selectedForClear,p);
+        ClearingResult result = resultProcessor.process(session, child, job,p);
         stats.apply(result);
     }
 
@@ -156,8 +156,8 @@ public class ConditionalClearingRequest {
         String excelStatus = child.getStatus().getTranslationEN();
         String outLines = JobParameterHelper.getParameter(child, "OUT_LINES");
         if (excelStatus.equals("Completed")) {
-            stats.setTotalOpenItems(Integer.parseInt(outLines));
-            if (stats.getTotalOpenItems() > 0) printSet(session, child, "OUT_RTX", p, job, "total");
+            stats.setOpen(Integer.parseInt(outLines));
+            if (stats.getOpen() > 0) printSet(session, child, "OUT_RTX", p, job, "total");
         }
     }
 

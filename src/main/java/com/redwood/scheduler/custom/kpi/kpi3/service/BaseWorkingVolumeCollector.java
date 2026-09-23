@@ -49,11 +49,11 @@ public class BaseWorkingVolumeCollector implements AccountItemSource {
     }
 
     private void collectStatistics(SchedulerSession session,Job job,Job extractorJob) throws Exception {
-        stats.setRuleSet1(JobParameterHelper.getIntParameter(job, "RuleSet1RowCount"));
+        stats.setOpen(JobParameterHelper.getIntParameter(job, "RuleSet1RowCount"));
 
         Set<String> keys = RTXService.getDocumentKeys(job,"RuleSet1", RTXSchemas.DT);
-        stats.setTotalOpenItems(fileWriter.writeItemsToFile(session,extractorJob,"total",keys));
-        //stats.setTotalCollectedItems(stats.getRuleSet1());
+        stats.setOpen(fileWriter.writeItemsToFile(session,extractorJob,"total",keys));
+        //stats.setTotalCollectedItems(stats.getOpen());
     }
 
 

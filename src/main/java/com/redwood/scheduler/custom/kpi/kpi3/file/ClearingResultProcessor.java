@@ -27,39 +27,27 @@ public class ClearingResultProcessor
             SchedulerSession session,
             Job clearingJob,
             Job outputJob,
-            int totalCollected,
             PrintWriter writer)
             throws Exception
     {
-        Long clearId = clearingJob.getJobId();
 
         String okLines = JobParameterHelper.getParameter(clearingJob, "OUT_DATA_OK_RTX");
         String errorLines = JobParameterHelper.getParameter(clearingJob, "OUT_DATA_ERROR_RTX");
 
         Map<String, List<String>> matchings = RTXService.groupByKey(clearingJob, "IN_DATA_RTX", schema, writer);
 
+        int proposed = fileWriter.writeItemsToFile(session,outputJob,"proposed", matchings);
+
         if (errorLines == null)
         {
-            int itemsCleared = totalCollected;
-
-            if (!matchings.isEmpty())
-            {
-                itemsCleared += fileWriter.writeItemsToFile(session, outputJob, "cleared", matchings);
-            }
-
-            return new ClearingResult(clearId, itemsCleared, 0);
+            if (!matchings.isEmpty()) fileWriter.writeItemsToFile(session, outputJob, "cleared", matchings);
+            return new ClearingResult(proposed, proposed, 0);
         }
 
         if (okLines == null)
         {
-            int errors = totalCollected;
-
-            if (!matchings.isEmpty())
-            {
-                errors += fileWriter.writeItemsToFile(session, outputJob, "errors", matchings);
-            }
-
-            return new ClearingResult(clearId, 0, errors);
+            if (!matchings.isEmpty()) fileWriter.writeItemsToFile(session, outputJob, "errors", matchings);
+            return new ClearingResult(proposed, 0, proposed);
         }
 
         List<String> errorsList = RTXService.getErrorsRtx(clearingJob,"OUT_DATA_ERROR_RTX", schema.groupingColumn());
@@ -76,7 +64,12 @@ public class ClearingResultProcessor
         int errorsCount = fileWriter.writeItemsToFile(session,outputJob,"errors", errorsMap);
         int clearedCount = fileWriter.writeItemsToFile(session,outputJob,"cleared", clearedMap);
 
-        return new ClearingResult(clearId, clearedCount, errorsCount);
+        if (proposed != clearedCount + errorsCount)
+        {
+            writer.println("WARNING: proposed=" + proposed + ", cleared=" + clearedCount + ", errors=" + errorsCount);
+        }
+
+        return new ClearingResult(proposed, clearedCount, errorsCount);
     }
 
 

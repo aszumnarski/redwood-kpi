@@ -6,9 +6,7 @@ public class AccountItemGlStatistics
     private final String accountGroup;
     private final long elapsedMs;
     private final long visitedJobs;
-    private final int ruleSet1;
     private final int autoClear;
-    private final int suggestedClear;
     private final int totalCollected;
     private final int totalOpenItems;
 
@@ -24,26 +22,14 @@ public class AccountItemGlStatistics
         this.elapsedMs = elapsedMs;
         this.visitedJobs = visitedJobs;
 
-        this.ruleSet1 = stats.getRuleSet1();
-        this.autoClear = stats.getAutoClear();
-        this.suggestedClear = stats.getSuggestedClear();
-        this.totalCollected = stats.getTotalCollected();
-        this.totalOpenItems = stats.getTotalOpenItems();
+        this.autoClear = stats.getProposed();
+        this.totalCollected = stats.getOpen();
+        this.totalOpenItems = stats.getOpen();
 
     }
 
     public long getElapsedMs(){
         return elapsedMs;
-    }
-
-    public int getRuleSet1()
-    {
-        return ruleSet1;
-    }
-
-    public int getSuggestedClear()
-    {
-        return suggestedClear;
     }
 
     public String getAccountGroup() { return accountGroup; }
@@ -57,9 +43,7 @@ public class AccountItemGlStatistics
         accountGroup +
         " | ms=" + elapsedMs +
         " | visitedJobs=" + visitedJobs +
-        " | ruleSet1=" + ruleSet1 +
         " | autoClear=" + autoClear +
-        " | suggestedClear=" + suggestedClear +
         " | totalCollected=" + totalCollected +
         " | totalOpenItems=" + totalOpenItems;
     }
@@ -71,7 +55,6 @@ public class AccountItemGlStatistics
         return period + ";" +
                 companyCode + ";" +
                 "conditional" + ";" +
-                getRuleSet1() + ";" +
                 getTotalOpenItems() + ";" +
                 getAccountGroup();
     }

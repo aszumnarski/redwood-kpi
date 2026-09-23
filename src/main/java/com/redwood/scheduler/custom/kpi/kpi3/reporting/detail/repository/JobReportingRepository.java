@@ -5,5 +5,6 @@ import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReporting
 
 public class JobReportingRepository {
     public void save(SchedulerSession session, JobReportingRecord record) {
+
     }
 }

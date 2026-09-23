@@ -74,9 +74,9 @@ public class AccountItemGL implements AccountItemSource {
             if (isMergeRTX(parentDefinitionName, childDefinitionName)) {
 
                 Set<String> keys = RTXService.getDocumentKeys(child,"OUT_TABLE", RTXSchemas.DT);
-                stats.setTotalOpenItems(fileWriter.writeItemsToFile(session,extractorJob,"proposed",keys));
+                stats.setOpen(fileWriter.writeItemsToFile(session,extractorJob,"proposed",keys));
 
-                //stats.setTotalOpenItems(JobParameterHelper.getIntParameter(child, "OUT_ROWCOUNT"));
+                //stats.setOpen(JobParameterHelper.getIntParameter(child, "OUT_ROWCOUNT"));
                 // TODO verify if return should be changed to continue
                 // Assumption:
                 // mergeRTX is the final relevant step in this AccountItemGL branch.

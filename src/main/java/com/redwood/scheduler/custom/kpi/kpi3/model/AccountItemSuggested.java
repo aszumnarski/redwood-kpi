@@ -34,7 +34,7 @@ public class AccountItemSuggested implements AccountItemSource {
 
         this.context = new AccountItemContext(job, parentDate);
         this.stats = new CollectorStats();
-        this.fileWriter = new ResultFileWriter(context, "suggested");
+        this.fileWriter = new ResultFileWriter(context, "proposed");
 
     }
 
@@ -111,7 +111,7 @@ public class AccountItemSuggested implements AccountItemSource {
 
     void processStandardDt(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
         long start = System.currentTimeMillis();
-        DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, job, context, "suggested", false);
+        DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, job, context, fileWriter,"proposed", false);
         stats.addDt(dt.getStats());
         standardDtCount++;
         standardDtMs += System.currentTimeMillis() - start;
@@ -123,8 +123,8 @@ public class AccountItemSuggested implements AccountItemSource {
 
     void processLastRule(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
         long start = System.currentTimeMillis();
-        DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, job, context, "suggested", true);
-        stats.setTotalCollectedItems(stats.getTotalCollected() + dt.getTotalCollected());
+        DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, job, context, fileWriter,"proposed", true);
+        stats.setOpen(stats.getOpen() + dt.getOpen());
         lastRuleCount++;
         lastRuleMs += System.currentTimeMillis() - start;
     }
@@ -135,8 +135,8 @@ public class AccountItemSuggested implements AccountItemSource {
 
     void processBaseWorking(SchedulerSession session, Job child, PrintWriter pw, Job job) throws Exception {
         long start = System.currentTimeMillis();
-        DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, job, context, "suggested", false);
-        stats.setTotalOpenItems(tot.getRuleSet1());
+        DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, job, context, fileWriter,"proposed", false);
+        stats.setOpen(tot.getOpen());
         baseWorkingCount++;
         baseWorkingMs += System.currentTimeMillis() - start;
     }

@@ -3,6 +3,7 @@ package com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model;
 import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
 import com.redwood.scheduler.custom.kpi.kpi3.file.FileAllocation;
+import com.redwood.scheduler.custom.kpi.kpi3.model.KPICounts;
 
 import java.util.Set;
 
@@ -51,47 +52,54 @@ public class JobReportingRecord
 
     // KPI metrics
 
-    private int totalOpenItems;
-
-    private int proposed;
-
-    private int cleared;
-
-    private int errors;
-
-    public double getMatchingRate()
-    {
-        if(totalOpenItems == 0)
-        {
-            return 0;
-        }
-
-        return proposed * 100.0 / totalOpenItems;
-    }
-
-    public double getMatchedClearRate()
-    {
-        if(proposed == 0)
-        {
-            return 0;
-        }
-
-        return cleared * 100.0 / proposed;
-    }
-
-    public double getClearingRate()
-    {
-        if(totalOpenItems == 0)
-        {
-            return 0;
-        }
-
-        return cleared * 100.0 / totalOpenItems;
-    }
+    private KPICounts counts = new KPICounts();
 
     //files
 
     private FileAllocation sourceFiles;
+
+
+    public double getMatchingRate()
+    {
+        if(counts.getOpen() == 0)
+        {
+            return 0;
+        }
+
+        return counts.getProposed() * 100.0 / counts.getOpen();
+    }
+
+    public double getMatchedClearRate()
+    {
+        if(counts.getProposed() == 0)
+        {
+            return 0;
+        }
+
+        return counts.getCleared() * 100.0 / counts.getProposed();
+    }
+
+    public double getClearingRate()
+    {
+        if(counts.getOpen() == 0)
+        {
+            return 0;
+        }
+
+        return counts.getCleared() * 100.0 / counts.getOpen();
+    }
+
+    public KPICounts getCounts()
+    {
+        return counts;
+    }
+
+    public void setCounts(KPICounts counts)
+    {
+        this.counts = counts;
+    }
+
+
 
     public String getPeriod() {
         return period;
@@ -221,40 +229,9 @@ public class JobReportingRecord
         this.uploadDates = uploadDates;
     }
 
-    public void setTotalOpenItems(int totalOpenItems) {
-        this.totalOpenItems = totalOpenItems;
-    }
-
-    public void setProposed(int proposed) {
-        this.proposed = proposed;
-    }
-
-    public void setCleared(int cleared) {
-        this.cleared = cleared;
-    }
-
-    public int getErrors() {
-        return errors;
-    }
-
-    public void setErrors(int errors) {
-        this.errors = errors;
-    }
 
     public void setSourceFiles(FileAllocation allocation) {
         this.sourceFiles = allocation;
-    }
-
-    public int getTotalOpenItems() {
-        return totalOpenItems;
-    }
-
-    public int getProposed() {
-        return proposed;
-    }
-
-    public int getCleared() {
-        return cleared;
     }
 
     public FileAllocation getSourceFiles() {
@@ -269,10 +246,10 @@ public class JobReportingRecord
                 ", companyCode='" + companyCode + '\'' +
                 ", accountItem='" + accountItem + '\'' +
                 ", clearingType=" + clearingType +
-                ", totalOpenItems=" + totalOpenItems +
-                ", proposed=" + proposed +
-                ", cleared=" + cleared +
-                ", errors=" + errors +
+                ", totalOpenItems=" + counts.getOpen() +
+                ", proposed=" + counts.getProposed() +
+                ", cleared=" + counts.getCleared() +
+                ", errors=" + counts.getErrors() +
                 ", sourceFiles=" + sourceFiles +
                 '}';
     }

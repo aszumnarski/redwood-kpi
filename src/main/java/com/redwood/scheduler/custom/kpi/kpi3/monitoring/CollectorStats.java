@@ -1,94 +1,64 @@
 package com.redwood.scheduler.custom.kpi.kpi3.monitoring;
 
 import com.redwood.scheduler.custom.kpi.kpi3.model.ClearingResult;
+import com.redwood.scheduler.custom.kpi.kpi3.model.KPICounts;
 
 public class CollectorStats
 {
-    private Long clearId = -1L;
 
-    private int totalOpenItems;
-    private int itemsCleared;
-    private int ruleSet1;
-    private int autoClear;
-    private int errors;
-    private int suggestedClear;
-    private int totalCollected;
+    private KPICounts counts = new KPICounts();
 
-    public int getRuleSet1() {
-        return ruleSet1;
+    public int getCleared() {
+        return counts.getCleared();
     }
-
-    public void setRuleSet1(int ruleSet1) {
-        this.ruleSet1 = ruleSet1;
+    public int getOpen() {
+        return counts.getOpen();
     }
-
-    public int getAutoClear() {
-        return autoClear;
-    }
-
-    public void setAutoClear(int autoClear) {
-        this.autoClear = autoClear;
-    }
-
-    public int getSuggestedClear() {
-        return suggestedClear;
-    }
-
-    public void setSuggestedClear(int suggestedClear) {
-        this.suggestedClear = suggestedClear;
-    }
-
-    public int getItemsCleared() {
-        return itemsCleared;
-    }
-
-    public int getTotalOpenItems() {
-        return totalOpenItems;
-    }
-
-    public int getTotalCollected() {
-        return totalCollected;
-    }
-
     public int getErrors() {
-        return errors;
+        return counts.getErrors();
     }
+    public int getProposed() { return counts.getProposed(); }
 
     public void addDt(CollectorStats other)
     {
-        if (ruleSet1 == 0) ruleSet1 = other.getRuleSet1();
-        autoClear += other.getAutoClear();
-        suggestedClear += other.getSuggestedClear();
-        totalCollected = autoClear + suggestedClear;
+        if (counts.getOpen() == 0) counts.setOpen(other.getOpen());
+        counts.setProposed(counts.getProposed() + other.getProposed());
+        counts.setCleared(counts.getCleared() + other.getCleared());
+        counts.setErrors(counts.getErrors() + other.getErrors());
     }
 
     public void apply(ClearingResult result)
     {
-        clearId = result.clearId();
-        itemsCleared += result.itemsCleared();
-        errors += result.errors();
+        counts.setProposed(counts.getProposed() + result.proposed());
+        counts.setCleared(counts.getCleared() + result.itemsCleared());
+        counts.setErrors(counts.getErrors() + result.errors());
     }
 
     public void add(CollectorStats other)
     {
-        ruleSet1 += other.getRuleSet1();
-        autoClear += other.getAutoClear();
-        suggestedClear += other.getSuggestedClear();
-        totalCollected += other.getTotalCollected();
-        totalOpenItems += other.getTotalOpenItems();
-        itemsCleared += other.getItemsCleared();
-        errors += other.getErrors();
+        counts.setOpen(counts.getOpen() + other.getOpen());
+        counts.setCleared(counts.getCleared()+ other.getCleared());
+        counts.setErrors(counts.getErrors() + other.getErrors());
     }
 
-    public void setTotalOpenItems(int totalOpenItems) {
-        this.totalOpenItems = totalOpenItems;
+    public KPICounts getCounts()
+    {
+        return counts;
     }
 
-    public void setTotalCollectedItems(int totalCollected) {
-        this.totalCollected = totalCollected;
+    public void setCounts(KPICounts counts)
+    {
+        this.counts = counts;
     }
 
-    public Long getClearId() {
-        return clearId;
+    public void setOpen(int open) { counts.setOpen(open); }
+
+
+    public void addProposed(int proposed) {
+        counts.setProposed(counts.getProposed() + proposed);
+    }
+
+    public void setProposed(int proposed) {
+        counts.setProposed(proposed);
     }
 }

@@ -4,6 +4,7 @@ import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemAutoLedger;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemSource;
+import com.redwood.scheduler.custom.kpi.kpi3.service.AutoOldLeafCollector;
 import com.redwood.scheduler.custom.kpi.kpi3.service.LeafCollector;
 
 public class ParentDifferentChildRule implements Rule
@@ -34,8 +35,8 @@ public class ParentDifferentChildRule implements Rule
     {
         return switch(type)
         {
-            case AUTO -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO,JobType.AUTO);
-            case AUTO_OLD -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO_OLD,JobType.AUTO);
+            case AUTO -> new AutoOldLeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO,JobType.AUTO);
+            case AUTO_OLD -> new AutoOldLeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO_OLD,JobType.AUTO);
             case AUTO_LEDGER -> new AccountItemAutoLedger(childJob, runStartDate);
             case GL -> null;
             case LEDGER -> null;

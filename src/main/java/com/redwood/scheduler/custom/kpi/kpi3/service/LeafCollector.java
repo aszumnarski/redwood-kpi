@@ -68,22 +68,22 @@ public class LeafCollector implements AccountItemSource {
             String c = child.getJobDefinition().getMasterJobDefinition().getName();
             if (isBaseWorkingParent(p, c)) {
                 long start = System.currentTimeMillis();
-                DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, extractorJob, context, config.outputCategory(), false);
+                DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, extractorJob, context, fileWriter, config.outputCategory(), false);
                 dtMs += System.currentTimeMillis() - start;
-                stats.setTotalOpenItems(tot.getRuleSet1());
+                stats.setOpen(tot.getOpen());
             } else if (isDtJob(p, c)) {
                 long start = System.currentTimeMillis();
-                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, config.outputCategory(), false);
+                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, fileWriter, config.outputCategory(), false);
                 dtMs += System.currentTimeMillis() - start;
                 stats.addDt(dt.getStats());
             } else if (c.equals("CUS_TRN_COLLECT_RTX") && config.collectRtx()) {
                 long start = System.currentTimeMillis();
-                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, config.outputCategory(), false);
+                DataTransformerCollector dt = new DataTransformerCollector(session, child, false, pw, extractorJob, context, fileWriter, config.outputCategory(), false);
                 dtMs += System.currentTimeMillis() - start;
-                stats.setTotalCollectedItems(dt.getTotalCollected());
+                stats.setOpen(dt.getOpen());
             } else if (c.equals("FCA_SAP_Tran_FB05_Clearing")) {
                 long start = System.currentTimeMillis();
-                ClearingResult result = clearingProcessor.process(session, child, extractorJob, stats.getTotalCollected(),pw);
+                ClearingResult result = clearingProcessor.process(session, child, extractorJob,pw);
                 pw.println("ClearingProcessor ms=" + (System.currentTimeMillis() - start));
                 stats.apply(result);
             }

@@ -36,10 +36,10 @@ public class ExactMatchRule implements Rule
     {
         return switch(type)
         {
-            case AUTO -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO,JobType.AUTO);
-            case AUTO_OLD -> new AutoOldLeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO_OLD);
+            case AUTO -> new AutoOldLeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO,JobType.AUTO);
+            case AUTO_OLD -> new AutoOldLeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO_OLD,JobType.AUTO);
             case AUTO_LEDGER -> new AccountItemAutoLedger(childJob, runStartDate);
-            case LEDGER -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.LEDGER,JobType.AUTO);
+            case LEDGER -> new AutoOldLeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.LEDGER,JobType.AUTO);
             //case GL -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.GL);
             case GL -> new BaseWorkingVolumeCollector(childJob,runStartDate);
             case CONDITIONAL -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.CONDITIONAL,JobType.CONDITIONAL);

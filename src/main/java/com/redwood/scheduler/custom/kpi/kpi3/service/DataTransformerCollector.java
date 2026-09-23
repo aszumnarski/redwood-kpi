@@ -24,52 +24,55 @@ public class DataTransformerCollector {
 
     private final String type;
 
-
-    public DataTransformerCollector(SchedulerSession session, Job childJob, boolean collectRuleSet1, PrintWriter p, Job extractorJob, AccountItemContext parentContext, String type, boolean suggestedClearFlag) throws Exception {
+    public DataTransformerCollector(SchedulerSession session, Job childJob, boolean collectRuleSet1, PrintWriter p, Job extractorJob,
+                                    AccountItemContext parentContext, ResultFileWriter fileWriter, String type,
+                                    boolean suggestedClearFlag)
+            throws Exception {
 
         this.context = parentContext;
         this.stats = new CollectorStats();
         this.type = type;
         this.childJob = childJob;
         this.extractorJob = extractorJob;
-        this.fileWriter = new ResultFileWriter(parentContext,type);
+        this.fileWriter = fileWriter;
         long collectorStart = System.currentTimeMillis();
 
         //p.println("DataTransformerCollector created - " + childJob.getJobId());
 
         if (!JobParameterHelper.isCompleted(childJob)) return;
 
-        stats.setRuleSet1(JobParameterHelper.getIntParameter(childJob, "RuleSet1RowCount"));
-        if (collectRuleSet1) printSet(session, "RuleSet1", p, "total", false);
+        //stats.setRuleSet1(JobParameterHelper.getIntParameter(childJob, "RuleSet1RowCount"));
+        //if (collectRuleSet1) printSet(session, "RuleSet1", p, "total", false);
+        if (collectRuleSet1) stats.setOpen(printSet(session, "RuleSet1", p, "total", false));
+        //stats.setAutoClear(JobParameterHelper.getIntParameter(childJob, "AutoClearRowCount"));
+        //if (stats.getAutoClear() != 0) printSet(session, "AutoClear", p, "proposed", false);
+        stats.addProposed(printSet(session, "AutoClear", p, "proposed", false));
+        //stats.setSuggestedClear(JobParameterHelper.getIntParameter(childJob, "SuggestedClearRowCount"));
+        //if (stats.getSuggestedClear() != 0) printSet(session, "SuggestedClear", p, "proposed", false);
+        stats.addProposed(printSet(session, "SuggestedClear", p, "proposed", false));
 
-        stats.setAutoClear(JobParameterHelper.getIntParameter(childJob, "AutoClearRowCount"));
-        if (stats.getAutoClear() != 0) printSet(session, "AutoClear", p, "proposed", false);
+        int totalCollected = JobParameterHelper.getIntParameter(childJob, "OUT_ROWCOUNT");
 
-        stats.setSuggestedClear(JobParameterHelper.getIntParameter(childJob, "SuggestedClearRowCount"));
-        if (stats.getSuggestedClear() != 0) printSet(session, "SuggestedClear", p, "proposed", false);
-
-        stats.setTotalCollectedItems(JobParameterHelper.getIntParameter(childJob, "OUT_ROWCOUNT"));
-        if (stats.getTotalCollected() != 0 && !collectRuleSet1)
+        if (totalCollected != 0 && !collectRuleSet1)
             printSet(session, "OUT_TABLE", p, "proposed", false);
 
-        if (!JobParameterHelper.hasParameter(childJob, "SuggestedClearRowCount")) stats.setSuggestedClear(stats.getTotalCollected());
-        if (suggestedClearFlag) printSet(session, "RuleSet1", p, "proposed", true);
+        //if (!JobParameterHelper.hasParameter(childJob, "SuggestedClearRowCount"))
+        //    stats.setSuggestedClear(stats.getOpen());
+        if (suggestedClearFlag) stats.setProposed(printSet(session, "RuleSet1", p, "proposed", true));
 
         p.println(
                 "DataTransformerCollector[" + childJob.getJobId() + "]" +
                         " totalMs=" + (System.currentTimeMillis() - collectorStart) +
-                        " ruleSet1=" + stats.getRuleSet1() +
-                        " autoClear=" + stats.getAutoClear() +
-                        " suggestedClear=" + stats.getSuggestedClear() +
-                        " totalCollected=" + stats.getTotalCollected()
+                        " counts=" + stats.getCounts()
         );
 
     }
 
-    private void printSet(SchedulerSession session, String parameter, PrintWriter p, String name, boolean proposedOnly) throws Exception {
+    private int printSet(SchedulerSession session, String parameter, PrintWriter p, String name, boolean proposedOnly) throws Exception {
+        int result = 0;
 
         try (RTXReader reader = RTXService.getReader(childJob, parameter)) {
-            if (reader == null) return;
+            if (reader == null) return result;
             long rowsRead = 0;
             long docsWritten = 0;
             long totalStart = System.currentTimeMillis();
@@ -89,31 +92,19 @@ public class DataTransformerCollector {
             }
             long keyMs = stopwatch.elapsedMs();
             stopwatch.reset();
-            fileWriter.writeItemsToFile(session, extractorJob, name, documentKeys);
+            result = fileWriter.writeItemsToFile(session, extractorJob, name, documentKeys);
             long writeMs = stopwatch.elapsedMs();
             long totalElapsedMs = System.currentTimeMillis() - totalStart;
             long otherMs = totalElapsedMs - keyMs - writeMs;
 
             p.println("DT[" + childJob.getJobId() + "] " + parameter + " rows=" + rowsRead + " docs=" + docsWritten + " totalMs=" + totalElapsedMs + " keyMs=" + keyMs + " writeMs=" + writeMs + " otherMs=" + otherMs);
 
-
         }
+        return result;
     }
 
-    public int getRuleSet1() {
-        return stats.getRuleSet1();
-    }
-
-    public int getAutoClear() {
-        return stats.getAutoClear();
-    }
-
-    public int getSuggestedClear() {
-        return stats.getSuggestedClear();
-    }
-
-    public int getTotalCollected() {
-        return stats.getTotalCollected();
+    public int getOpen() {
+        return stats.getCounts().getOpen();
     }
 
     public Job getJob() {

@@ -25,13 +25,11 @@ public class JobReportingRecordFactory
         record.setCompanyCode(context.getCompanyCode());
         record.setAccountItem(context.getAccountGroup());
         record.setClearingType(jobType);
-        record.setTotalOpenItems(stats.getTotalOpenItems());
-        record.setProposed(stats.getTotalCollected());
-        record.setCleared(stats.getItemsCleared());
-        record.setErrors(stats.getErrors());
         record.setSourceFiles(allocation);
 
         record.setPeriod(PeriodUtil.getPeriod(context.getParentDate()));
+
+        record.setCounts(stats.getCounts());
 
         return record;
     }

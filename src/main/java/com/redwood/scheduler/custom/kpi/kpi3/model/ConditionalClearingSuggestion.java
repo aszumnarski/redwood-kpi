@@ -124,24 +124,6 @@ public class ConditionalClearingSuggestion {
         p.println("TOP ACCOUNTITEMGL BY RULESET ROWS");
         p.println("========================================");
 
-        accountItemGlStats.stream()
-                .sorted(
-                        Comparator.comparingInt(
-                                        AccountItemGlStatistics::getRuleSet1)
-                                .reversed()).forEach(p::println);
-
-
-        p.println();
-        p.println("TOP ACCOUNTITEMGL BY SUGGESTED CLEAR");
-        p.println("========================================");
-
-        accountItemGlStats.stream()
-                .sorted(
-                        Comparator.comparingInt(
-                                        AccountItemGlStatistics::getSuggestedClear)
-                                .reversed()).forEach(p::println);
-
-
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob) throws Exception {
