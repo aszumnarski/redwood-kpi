@@ -34,8 +34,8 @@ public class ParentDifferentChildRule implements Rule
     {
         return switch(type)
         {
-            case AUTO -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO);
-            case AUTO_OLD -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO_OLD);
+            case AUTO -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO,JobType.AUTO);
+            case AUTO_OLD -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO_OLD,JobType.AUTO);
             case AUTO_LEDGER -> new AccountItemAutoLedger(childJob, runStartDate);
             case GL -> null;
             case LEDGER -> null;

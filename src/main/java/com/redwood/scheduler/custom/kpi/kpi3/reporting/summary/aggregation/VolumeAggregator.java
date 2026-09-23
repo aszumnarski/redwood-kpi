@@ -1,4 +1,4 @@
-package com.redwood.scheduler.custom.kpi.kpi3.service;
+package com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.aggregation;
 
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.JobFile;
@@ -8,9 +8,9 @@ import com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec;
 import com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService;
 import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.model.Reconciliation;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.csv.ReportingCsvWriter;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.model.ReportingKey;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.model.ReportingRecord;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.csv.ReportingCsvWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.file.FileAllocation;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingRecord;
 import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
 
 import java.util.List;
@@ -56,21 +56,18 @@ public class VolumeAggregator
             filesMap.computeIfAbsent(fileKey, k -> new ArrayList<>()).add(parts[1]);
         }
 
-        Map<ReportingKey,ReportingRecord> rows = collectRows(filesMap);
-        if (rows.isEmpty()) return null;
+        ReportingAggregator aggregator = collectRows(filesMap);
+
+        if (aggregator.getRecords().isEmpty()) return null;
+
 
         String fileName = JobParameterHelper.getParameter(job,"IN_FILENAME");
         JobFile jf = JobFileService.createJobFile(session, job, fileName);
         try (FileOutputStream fos = new FileOutputStream(jf.getFileName()))
         {
             JobFileService.write(fos, ReportingCsvWriter.getHeader());
-            for(ReportingKey key:rows.keySet())
+            for(ReportingRecord row:aggregator.getRecords())
             {
-                ReportingRecord row = rows.get(key);
-                if("B013100_TradeAR3rdParty_CFAVF".equals(row.getAccountGroup()))
-                {
-                    out.println("WRITING: " + ReportingCsvWriter.toCsv(row));
-                }
                 if(row.isEmpty()) continue;
                 JobFileService.write(fos, ReportingCsvWriter.toCsv(row));
             }
@@ -81,60 +78,51 @@ public class VolumeAggregator
 
 
 
-    private Map<ReportingKey, ReportingRecord> collectRows(Map<FileKey, List<String>> filesMap)
+    private ReportingAggregator collectRows(Map<FileKey, List<String>> filesMap)
             throws Exception
     {
-        Map<ReportingKey, ReportingRecord> result = new HashMap<>();
+        ReportingAggregator result = new ReportingAggregator();
         Set<String> missingChains = new HashSet<>();
         Set<String> processedConditionalFiles = new HashSet<>();
+
 
         for (FileKey key : filesMap.keySet())
         {
             out.println("collectRows looping key: " + key);
-            ReportingKey reportingKey = ReportingKey.from(key);
 
-            List<String> conditional = new ArrayList<>();
-            List<String> total = new ArrayList<>();
-            List<String> proposed = new ArrayList<>();
-            List<String> selected = new ArrayList<>();
-            List<String> cleared = new ArrayList<>();
-            List<String> errors = new ArrayList<>();
-            List<String> missings = new ArrayList<>();
-            List<String> certId = new ArrayList<>();
+            FileAllocation allocation = new FileAllocation();
+
             for (String path : filesMap.get(key))
             {
                 out.println("Allocating path: " + path);
-                if (path.endsWith("total.csv")) total.add(path);
-                else if (path.endsWith("proposed.csv")) proposed.add(path);
-                else if (path.endsWith("selected.csv")) selected.add(path);
-                else if (path.endsWith("cleared.csv")) cleared.add(path);
-                else if (path.endsWith("errors.csv")) errors.add(path);
-                else if (path.endsWith("missing_chains.csv")) missings.add(path);
-                else if (path.endsWith("certId.csv")) certId.add(path);
-                else if (path.endsWith("conditional_summary.csv")) conditional.add(path);
-                else out.println("file name error: " + path);
+                allocation.add(path);
             }
 
-            boolean hasAnyKpiFile = !(conditional.isEmpty() && total.isEmpty() && proposed.isEmpty() && selected.isEmpty() && cleared.isEmpty() && errors.isEmpty() && certId.isEmpty());
-            out.println("hasAnyKpiFile=" + hasAnyKpiFile);
-            if (!hasAnyKpiFile)
+            if (!allocation.hasAnyKpiFile())
             {
-                if (!missings.isEmpty()) missingChains.addAll(getUniqueLines(missings));
+                if (!allocation.getMissings().isEmpty())
+                {
+                    missingChains.addAll(
+                            getUniqueLines(
+                                    allocation.getMissings()));
+                }
+
                 continue;
             }
-            out.println("conditional.isEmpty()=" + conditional.isEmpty());
-            if (!conditional.isEmpty())
+
+            out.println("conditional.isEmpty()=" + allocation.getConditional().isEmpty());
+            if (!allocation.getConditional().isEmpty())
             {
-                String conditionalFile = conditional.get(0);
+                String conditionalFile = allocation.getConditional().get(0);
 
                 if (processedConditionalFiles.add(conditionalFile))
                 {
-                    parseConditionalFile(conditional, result);
+                    parseConditionalFile(allocation.getConditional(), result);
                 }
 
-                if (!missings.isEmpty())
+                if (!allocation.getMissings().isEmpty())
                 {
-                    missingChains.addAll(getUniqueLines(missings));
+                    missingChains.addAll(getUniqueLines(allocation.getMissings()));
                 }
                 out.println("====================================================================================");
                 continue;
@@ -142,10 +130,10 @@ public class VolumeAggregator
 
             ReportingRecord row = new ReportingRecord(key);
 
-            out.println("certId.isEmpty()=" + certId.isEmpty());
-            if (!certId.isEmpty())
+            out.println("certId.isEmpty()=" +  allocation.getCertId().isEmpty());
+            if (!allocation.getCertId().isEmpty())
             {
-                Set<String> certificationSet = getUniqueLines(certId);
+                Set<String> certificationSet = getUniqueLines(allocation.getCertId());
                 if(certificationSet.size() != 1)
                 {
                     err.println("More than 1 certification found! " + certificationSet + " for key " + key);
@@ -161,18 +149,20 @@ public class VolumeAggregator
             }
             else
             {
-                if (!total.isEmpty()) row.setTotal(countUniqueLines(total));
-                if (!proposed.isEmpty()) row.setProposed(countUniqueLines(proposed));
-                if (!selected.isEmpty()) row.setSelected(countUniqueLines(selected));
-                if (!cleared.isEmpty()) row.setCleared(countUniqueLines(cleared));
-                if (!errors.isEmpty()) row.setError(countUniqueLines(errors));
+                if (!allocation.getTotal().isEmpty()) row.setTotal(countUniqueLines(allocation.getTotal()));
+                if (!allocation.getProposed().isEmpty()) row.setProposed(countUniqueLines(allocation.getProposed()));
+                if (!allocation.getSelected().isEmpty()) row.setSelected(countUniqueLines(allocation.getSelected()));
+                if (!allocation.getCleared().isEmpty()) row.setCleared(countUniqueLines(allocation.getCleared()));
+                if (!allocation.getErrors().isEmpty()) row.setError(countUniqueLines(allocation.getErrors()));
             }
-            if (!missings.isEmpty()) missingChains.addAll(getUniqueLines(missings));
+            if (!allocation.getMissings().isEmpty()) missingChains.addAll(getUniqueLines(allocation.getMissings()));
 
+            result.mergeConditionalResults(row);
+            /*
             ReportingRecord existing = result.get(reportingKey);
 
             if(existing == null) {
-                result.put(reportingKey, row);
+                result.add(row);
             } else {
                 out.println("Overriding current value for " + key);
                 if(!"conditional".equalsIgnoreCase(key.type)) throw new Exception ("Incorrect merge!");
@@ -180,22 +170,16 @@ public class VolumeAggregator
                 existing.setError(row.getError());
                 existing.setSelected(row.getSelected());
             }
+
+             */
             out.println("====================================================================================");
         }
         if(!missingChains.isEmpty()) createMissingsFile(missingChains);
-        //if(!certIds.isEmpty())
-
-        result.forEach((k,v) -> {
-            if("B013100_TradeAR3rdParty_CFAVF".equals(v.getAccountGroup()))
-            {
-                out.println("END COLLECTROWS: " + ReportingCsvWriter.toCsv(v));
-            }
-        });
 
         return result;
     }
 
-    private void parseConditionalFile(List<String> files, Map<ReportingKey, ReportingRecord> result) throws Exception
+    private void parseConditionalFile(List<String> files, ReportingAggregator result) throws Exception
     {
         for (String path : files)
         {
@@ -233,25 +217,27 @@ public class VolumeAggregator
                             cols[5]  // name
                     );
 
-                    ReportingKey reportingKey = ReportingKey.from(key);
-
                     out.println("parseConditionalFile.key: " + key);
                     ReportingRecord row = new ReportingRecord(key);
 
                     row.setTotal(Integer.parseInt(cols[3]));
                     row.setProposed(Integer.parseInt(cols[4]));
 
+                    result.mergeConditionalSummary(row);
+                    /*
                     out.println("ROW: " + ReportingCsvWriter.toCsv(row));
                     ReportingRecord existing = result.get(reportingKey);
                     out.println("EXISTING: " + (existing == null ? "NULL" : ReportingCsvWriter.toCsv(existing)));
                     if(existing == null) {
-                        result.put(reportingKey, row);
+                        result.add(row);
                         out.println("ROW added...");
                     } else {
                         existing.setTotal(row.getTotal());
                         existing.setProposed(row.getProposed());
                         out.println("EXISTING updated...");
                     }
+
+                     */
                 }
             }
         }

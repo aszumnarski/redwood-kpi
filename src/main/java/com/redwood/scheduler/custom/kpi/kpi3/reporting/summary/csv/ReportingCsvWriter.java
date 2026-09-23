@@ -1,7 +1,6 @@
-package com.redwood.scheduler.custom.kpi.kpi3.reporting.csv;
+package com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.csv;
 
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.model.ReportingRecord;
-import com.redwood.scheduler.custom.kpi.kpi3.service.VolumeAggregator;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingRecord;
 
 import java.util.List;
 import java.util.function.Function;

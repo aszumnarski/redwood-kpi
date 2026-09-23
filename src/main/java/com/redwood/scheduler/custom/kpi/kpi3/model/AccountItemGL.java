@@ -53,7 +53,7 @@ public class AccountItemGL implements AccountItemSource {
     }
 
     public AccountItemGlStatistics getStatistics() {
-        return new AccountItemGlStatistics(context.getJob().getJobId(), context.getAccountGroup(), elapsedMs, visitedJobs, stats);
+        return new AccountItemGlStatistics(context.getId(), context.getAccountGroup(), elapsedMs, visitedJobs, stats);
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob)

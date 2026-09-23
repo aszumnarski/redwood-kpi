@@ -4,12 +4,16 @@ import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.custom.kpi.kpi3.config.CollectorConfig;
+import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ClearingResultProcessor;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemContext;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemSource;
 import com.redwood.scheduler.custom.kpi.kpi3.model.ClearingResult;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.factory.JobReportingRecordFactory;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReportingRecord;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.JobReportingRepository;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
 
 import java.io.PrintWriter;
@@ -21,23 +25,39 @@ public class LeafCollector implements AccountItemSource {
     private final CollectorConfig config;
     private final CollectorStats stats;
     private long dtMs;
+    private final JobReportingRecordFactory factory;
+    private final JobReportingRepository repository;
+    private final JobType jobType;
 
     public LeafCollector(
             Job job,
             DateTimeZone parentDate,
-            CollectorConfig config) throws Exception {
+            CollectorConfig config,JobType jobType) throws Exception {
 
         this.context = new AccountItemContext(job, parentDate);
         this.fileWriter = new ResultFileWriter(context, config.outputCategory());
         this.clearingProcessor = new ClearingResultProcessor(fileWriter, RTXSchemas.DT);
         this.config = config;
         this.stats = new CollectorStats();
+        this.factory = new JobReportingRecordFactory();
+        this.repository = new JobReportingRepository();
+        this.jobType = jobType;
     }
 
-    public void collectChildren(SchedulerSession session, PrintWriter p, Job extractorJob)
-            throws Exception {
+    public void collectChildren(
+            SchedulerSession session,
+            PrintWriter p,
+            Job extractorJob)
+            throws Exception
+    {
         scan(session, context.getJob(), p, extractorJob);
 
+        JobReportingRecord record = factory.create(context, stats, fileWriter.getAllocation(), jobType);
+
+        p.println("JOB REPORTING RECORD");
+        p.println(record);
+
+        repository.save(session, record);
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter pw, Job extractorJob)

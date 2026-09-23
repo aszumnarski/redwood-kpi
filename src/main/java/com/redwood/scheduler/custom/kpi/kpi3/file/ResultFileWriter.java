@@ -18,17 +18,20 @@ public class ResultFileWriter
     private final AccountItemContext context;
     private final String type;
     private static final FileStatistics FILE_STATS = new FileStatistics();
+    private final FileAllocation allocation;
 
     public ResultFileWriter()
     {
         this.context = null;
         this.type = null;
+        allocation = new FileAllocation();
     }
 
     public ResultFileWriter(AccountItemContext context, String type)
     {
         this.context = context;
         this.type = type;
+        allocation = new FileAllocation();
     }
 
     public String buildFileName(String name){
@@ -43,7 +46,8 @@ public class ResultFileWriter
         FILE_STATS.lookup();
 
         JobFile jobFile = job.getJobFileByName(fileName);
-
+        String reference = job.getJobId() + ":" + fileName;
+        allocation.add(reference);
         if (jobFile == null)
         {
             FILE_STATS.miss();
@@ -65,6 +69,11 @@ public class ResultFileWriter
         }
         FILE_STATS.addRows(fileName, count);
         return count;
+    }
+
+    public FileAllocation getAllocation()
+    {
+        return allocation;
     }
 
     public int writeItemsToFile(SchedulerSession session, Job job, String resultType, Collection<String> items) throws Exception

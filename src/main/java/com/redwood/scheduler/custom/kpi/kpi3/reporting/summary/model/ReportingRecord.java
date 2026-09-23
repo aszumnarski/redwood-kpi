@@ -1,4 +1,4 @@
-package com.redwood.scheduler.custom.kpi.kpi3.reporting.model;
+package com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model;
 
 import com.redwood.scheduler.custom.kpi.kpi3.file.FileKey;
 
