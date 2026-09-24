@@ -7,7 +7,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.file.FileKey;
 import com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec;
 import com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService;
 import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
-import com.redwood.scheduler.custom.kpi.kpi3.model.Reconciliation;
+import com.redwood.scheduler.custom.kpi.kpi3.model.KPICounts;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.csv.ReportingCsvWriter;
 import com.redwood.scheduler.custom.kpi.kpi3.file.FileAllocation;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingRecord;
@@ -140,10 +140,9 @@ public class VolumeAggregator
                     //throw new Exception ("More than 1 certification found! " + certificationSet + " for key " + key);
                 }
                 String id = certificationSet.iterator().next();
-                Reconciliation recon = ReconciliationRepository.getStatusTotalsForCert(session,Long.parseLong(id));
-                row.setTotal(recon.getTotal());
+                KPICounts recon = ReconciliationRepository.getStatusTotalsForCert(session,Long.parseLong(id));
+                row.setTotal(recon.getOpen());
                 row.setProposed(recon.getProposed());
-                row.setSelected(recon.getSelected());
                 row.setCleared(recon.getCleared());
                 row.setError(recon.getErrors());
             }
@@ -151,7 +150,6 @@ public class VolumeAggregator
             {
                 if (!allocation.getTotal().isEmpty()) row.setTotal(countUniqueLines(allocation.getTotal()));
                 if (!allocation.getProposed().isEmpty()) row.setProposed(countUniqueLines(allocation.getProposed()));
-                if (!allocation.getSelected().isEmpty()) row.setSelected(countUniqueLines(allocation.getSelected()));
                 if (!allocation.getCleared().isEmpty()) row.setCleared(countUniqueLines(allocation.getCleared()));
                 if (!allocation.getErrors().isEmpty()) row.setError(countUniqueLines(allocation.getErrors()));
             }

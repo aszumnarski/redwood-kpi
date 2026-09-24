@@ -5,13 +5,13 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.exception.SchedulerAPIPersistenceException;
 import java.sql.SQLException;
 import com.redwood.scheduler.api.model.ObjectGetter;
-import com.redwood.scheduler.custom.kpi.kpi3.model.Reconciliation;
+import com.redwood.scheduler.custom.kpi.kpi3.model.KPICounts;
 
 import java.sql.ResultSet;
 
 public class ReconciliationRepository
 {
-    public static Reconciliation getStatusTotalsForCert(SchedulerSession session, long certId)
+    public static KPICounts getStatusTotalsForCert(SchedulerSession session, long certId)
     {
         final String sql ="SELECT A_action_status, A_auto_comment, count(*) as total FROM BSC_LineItem WHERE F_cert_unique_id = ? GROUP BY A_action_status,A_auto_comment";
         Object[] params = new Object[]{ certId };
@@ -29,25 +29,26 @@ public class ReconciliationRepository
 
     private static class ReconciliationCallback implements APIResultSetCallback
     {
-        private final Reconciliation recon = new Reconciliation();
+        private final KPICounts counts = new KPICounts();
         @Override
         public void start()
         {
-            recon.clear();
+            counts.clear();
         }
         @Override
         public boolean callback(ResultSet rs, ObjectGetter getter)
                 throws SQLException
         {
             String status = rs.getString("A_action_status");
-            int count = rs.getInt("total");
             String comment = rs.getString("A_auto_comment");
 
-            recon.addTotal(count);
+            int total = rs.getInt("total");
 
             boolean isProposed = "Proposed for Clearing".equalsIgnoreCase(comment);
 
-            if (isProposed) recon.addProposed(count);
+            counts.addOpen(total);
+
+            if (isProposed) counts.addProposed(total);
 
             if (status == null) return true;
 
@@ -55,17 +56,13 @@ public class ReconciliationRepository
             boolean isFailed    = "Clearing failed".equalsIgnoreCase(status);
             boolean isRunning   = "Clearing running".equalsIgnoreCase(status);
 
-            if (isProposed && (isCompleted || isFailed))
-            {
-                recon.addSelected(count);
-            }
             if (isProposed && isCompleted)
             {
-                recon.addCleared(count);
+                counts.addCleared(total);
             }
             if (isProposed && isFailed)
             {
-                recon.addErrors(count);
+                counts.addErrors(total);
             }
             if (isRunning)
             {
@@ -89,9 +86,9 @@ public class ReconciliationRepository
             // nothing needed here — aggregation is already done
         }
 
-        public Reconciliation getTotals()
+        public KPICounts getTotals()
         {
-            return recon;
+            return counts;
         }
     }
 }

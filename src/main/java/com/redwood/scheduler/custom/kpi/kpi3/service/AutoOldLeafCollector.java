@@ -3,7 +3,6 @@ package com.redwood.scheduler.custom.kpi.kpi3.service;
 import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
-import com.redwood.scheduler.custom.kpi.kpi3.config.CollectorConfig;
 import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ClearingResultProcessor;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
@@ -15,16 +14,17 @@ import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.factory.JobReporti
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReportingRecord;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.JobReportingRepository;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
+import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
 
 import java.io.PrintWriter;
+import java.util.Set;
 
 public class AutoOldLeafCollector implements AccountItemSource {
     private final AccountItemContext context;
     private final ResultFileWriter fileWriter;
     private final ClearingResultProcessor clearingProcessor;
-    private final CollectorConfig config;
     private final CollectorStats stats;
-    private long dtMs;
+    private long openItemsMs;
     private boolean baseWorkingFound;
     private boolean fb05Found;
 
@@ -34,14 +34,12 @@ public class AutoOldLeafCollector implements AccountItemSource {
 
     public AutoOldLeafCollector(
             Job job,
-            DateTimeZone parentDate,
-            CollectorConfig config, JobType jobType) throws Exception {
+            DateTimeZone parentDate, JobType jobType) throws Exception {
 
 
         this.context = new AccountItemContext(job, parentDate);
-        this.fileWriter = new ResultFileWriter(context, config.outputCategory());
+        this.fileWriter = new ResultFileWriter(context, "auto");
         this.clearingProcessor = new ClearingResultProcessor(fileWriter, RTXSchemas.DT);
-        this.config = config;
         this.stats = new CollectorStats();
         baseWorkingFound = false;
         fb05Found = false;
@@ -58,7 +56,7 @@ public class AutoOldLeafCollector implements AccountItemSource {
     @Override
     public void collectChildren(SchedulerSession session, PrintWriter p, Job extractorJob) throws Exception {
         scan(session, context.getJob(), p, extractorJob);
-        p.println("AutoOldLeafCollector dtMs=" + dtMs);
+        p.println("AutoOldLeafCollector openItemsMs=" + openItemsMs);
         p.println("baseWorkingFound=" + baseWorkingFound + ", fb05Found=" + fb05Found);
 
         JobReportingRecord record = factory.create(context, stats, fileWriter.getAllocation(), jobType);
@@ -80,10 +78,8 @@ public class AutoOldLeafCollector implements AccountItemSource {
             String c = child.getJobDefinition().getMasterJobDefinition().getName();
             if (isBaseWorking(c) && !baseWorkingFound) {
                 long start = System.currentTimeMillis();
-                DataTransformerCollector tot = new DataTransformerCollector(session, child, true, pw, extractorJob, context, fileWriter, config.outputCategory(), false);
-                dtMs += System.currentTimeMillis() - start;
-                stats.setOpen(tot.getOpen());
-                stats.setOpen(tot.getOpen());
+                stats.setOpen(collectRuleSet1(session, child, pw, extractorJob));
+                openItemsMs += System.currentTimeMillis() - start;
                 baseWorkingFound = true;
             } else if (c.equals("FCA_SAP_Tran_FB05_Clearing") && !fb05Found) {
                 long start = System.currentTimeMillis();
@@ -94,6 +90,15 @@ public class AutoOldLeafCollector implements AccountItemSource {
             }
             scan(session, child, pw, extractorJob);
         }
+
+    }
+
+    private int collectRuleSet1(SchedulerSession session, Job dtJob, PrintWriter p, Job extractorJob)
+            throws Exception
+    {
+
+            Set<String> documentKeys = RTXService.getDocumentKeys(dtJob, "RuleSet1", RTXSchemas.DT);
+            return fileWriter.writeItemsToFile(session, extractorJob, "total", documentKeys);
 
     }
 

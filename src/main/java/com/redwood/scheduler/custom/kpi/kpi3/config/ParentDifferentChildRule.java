@@ -5,7 +5,6 @@ import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemAutoLedger;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemSource;
 import com.redwood.scheduler.custom.kpi.kpi3.service.AutoOldLeafCollector;
-import com.redwood.scheduler.custom.kpi.kpi3.service.LeafCollector;
 
 public class ParentDifferentChildRule implements Rule
 {
@@ -35,15 +34,14 @@ public class ParentDifferentChildRule implements Rule
     {
         return switch(type)
         {
-            case AUTO -> new AutoOldLeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO,JobType.AUTO);
-            case AUTO_OLD -> new AutoOldLeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO_OLD,JobType.AUTO);
+            case AUTO, AUTO_OLD -> new AutoOldLeafCollector(childJob, runStartDate, JobType.AUTO);
             case AUTO_LEDGER -> new AccountItemAutoLedger(childJob, runStartDate);
-            case GL -> null;
-            case LEDGER -> null;
-            case CONDITIONAL -> null;
-            case CONDITIONAL_GL -> null;
-            case SUGGESTED_DIV -> null;
-            case SUGGESTED_AI -> null;
+            case GL -> throw new IllegalStateException("Legacy GL collector is no longer supported");
+            case LEDGER -> throw new IllegalStateException("Legacy LEDGER collector is no longer supported");
+            case CONDITIONAL -> throw new IllegalStateException("Legacy CONDITIONAL collector is no longer supported");
+            case CONDITIONAL_GL -> throw new IllegalStateException("Legacy CONDITIONAL_GL collector is no longer supported");
+            case SUGGESTED_DIV -> throw new IllegalStateException("Legacy SUGGESTED_DIV collector is no longer supported");
+            case SUGGESTED_AI -> throw new IllegalStateException("Legacy SUGGESTED_AI collector is no longer supported");
         };
     }
 

@@ -41,6 +41,11 @@ public class ResultFileWriter
 
     public int writeItemsToNamedFile(SchedulerSession session, Job job, String fileName, Collection<String> items) throws Exception
     {
+        if (items.isEmpty())
+        {
+            return 0;
+        }
+
         boolean append = true;
 
         FILE_STATS.lookup();

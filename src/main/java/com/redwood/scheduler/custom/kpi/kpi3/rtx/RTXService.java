@@ -51,10 +51,7 @@ public final class RTXService {
             if (reader == null) return answer;
 
             for (RTXRow r : reader.rows()) {
-                answer.add(
-                        r.getString(schema.documentColumn())
-                                + r.getString(schema.itemColumn())
-                                + r.getString(schema.fiscalYearColumn()));
+                answer.add(getDocumentKey(r, schema));
             }
         }
 
@@ -68,9 +65,19 @@ public final class RTXService {
         return tp.getRTXReader();
     }
 
-    public static String getDocumentKey(RTXRow row) {
-        String rldnr = row.getMetadata().hasColumn("RLDNR") ? row.getString("RLDNR") : "";
-        return row.getString("BELNR") + row.getString("BUZEI") + row.getString("GJAHR") + rldnr;
+    public static String getDocumentKey(RTXRow row, RTXSchema schema)
+    {
+        String ledger = "";
+
+        if (schema.ledgerColumn() != null && row.getMetadata().hasColumn(schema.ledgerColumn()))
+        {
+            ledger = row.getString(schema.ledgerColumn());
+        }
+
+        return row.getString(schema.documentColumn())
+                + row.getString(schema.itemColumn())
+                + row.getString(schema.fiscalYearColumn())
+                + ledger;
     }
 
 }

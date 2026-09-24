@@ -4,8 +4,7 @@ import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.custom.kpi.kpi3.model.*;
 import com.redwood.scheduler.custom.kpi.kpi3.service.AutoOldLeafCollector;
-import com.redwood.scheduler.custom.kpi.kpi3.service.BaseWorkingVolumeCollector;
-import com.redwood.scheduler.custom.kpi.kpi3.service.LeafCollector;
+
 
 public class ExactMatchRule implements Rule
 {
@@ -36,13 +35,10 @@ public class ExactMatchRule implements Rule
     {
         return switch(type)
         {
-            case AUTO -> new AutoOldLeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO,JobType.AUTO);
-            case AUTO_OLD -> new AutoOldLeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.AUTO_OLD,JobType.AUTO);
+            case AUTO, LEDGER, AUTO_OLD -> new AutoOldLeafCollector(childJob, runStartDate,JobType.AUTO);
             case AUTO_LEDGER -> new AccountItemAutoLedger(childJob, runStartDate);
-            case LEDGER -> new AutoOldLeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.LEDGER,JobType.AUTO);
-            //case GL -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.GL);
-            case GL -> new BaseWorkingVolumeCollector(childJob,runStartDate);
-            case CONDITIONAL -> new LeafCollector(childJob, runStartDate, CollectorConfigurationRegistry.CONDITIONAL,JobType.CONDITIONAL);
+            case GL -> throw new IllegalStateException("Legacy GL collector is no longer supported");
+            case CONDITIONAL -> throw new IllegalStateException("Legacy CONDITIONAL collector is no longer supported");
             case CONDITIONAL_GL -> new AccountItemGL(childJob, runStartDate);
             case SUGGESTED_DIV ->  new SuggestedClearingDIV(childJob,runStartDate);
             case SUGGESTED_AI -> new AccountItemSuggested(childJob,runStartDate);

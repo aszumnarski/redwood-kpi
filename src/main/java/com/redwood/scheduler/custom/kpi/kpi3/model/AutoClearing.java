@@ -9,7 +9,6 @@ import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ParentDifferentChildRule;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
-import com.redwood.scheduler.custom.kpi.kpi3.service.LeafCollector;
 
 import java.io.PrintWriter;
 import java.util.HashMap;
@@ -164,7 +163,6 @@ public class AutoClearing {
         sourceTimes.merge(sourceName, elapsed, Long::sum);
         sourceCounts.merge(sourceName, 1, Integer::sum);
         stats.add(source.getStats());
-        if(source instanceof LeafCollector leaf) p.println("LeafCollector breakdown: " + "dtMs=" + leaf.getDtMs() + ", otherMs=" + (elapsed - leaf.getDtMs()));
 
     }
 

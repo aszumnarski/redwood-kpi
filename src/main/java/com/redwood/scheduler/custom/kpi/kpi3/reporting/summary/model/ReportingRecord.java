@@ -8,7 +8,6 @@ public class ReportingRecord {
     private final String name;
     private int total;
     private int proposed;
-    private int selected;
     private int cleared;
     private int error;
 
@@ -71,14 +70,6 @@ public class ReportingRecord {
 
     public void setTotal(int total) {
         this.total = total;
-    }
-
-    public int getSelected() {
-        return selected;
-    }
-
-    public void setSelected(int selected) {
-        this.selected = selected;
     }
 
     public String getName() {

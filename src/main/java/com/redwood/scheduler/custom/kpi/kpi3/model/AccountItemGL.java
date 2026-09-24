@@ -5,12 +5,16 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.custom.kpi.kpi3.config.AccountItemType;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
+import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
 import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
-import com.redwood.scheduler.custom.kpi.kpi3.monitoring.AccountItemGlStatistics;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.factory.JobReportingRecordFactory;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReportingRecord;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.JobReportingRepository;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
+import com.redwood.scheduler.custom.kpi.kpi3.service.BaseWorkingVolumeCollector;
 
 import java.io.PrintWriter;
 import java.util.List;
@@ -28,12 +32,19 @@ public class AccountItemGL implements AccountItemSource {
     private long visitedJobs;
     private final ResultFileWriter fileWriter;
 
+    private final JobReportingRecordFactory factory;
+    private final JobReportingRepository repository;
+
 
     public AccountItemGL(Job job, DateTimeZone parentDate)
             throws Exception {
         this.context = new AccountItemContext(job, parentDate);
         this.stats = new CollectorStats();
         this.fileWriter = new ResultFileWriter(context, "conditional");
+
+        this.factory = new JobReportingRecordFactory();
+        this.repository = new JobReportingRepository();
+
     }
 
     @Override
@@ -42,18 +53,24 @@ public class AccountItemGL implements AccountItemSource {
         long start = System.currentTimeMillis();
         scan(session, context.getJob(), p, extractorJob);
         elapsedMs = System.currentTimeMillis() - start;
-    }
 
-    public long getElapsedMs() {
-        return elapsedMs;
-    }
+        p.println("========================================");
+        p.println("ACCOUNT ITEM GL");
+        p.println("========================================");
+        p.println("Visited Jobs       : " + visitedJobs);
 
-    public long getVisitedJobs() {
-        return visitedJobs;
-    }
+        p.println("Elapsed Ms   : " + elapsedMs);
 
-    public AccountItemGlStatistics getStatistics() {
-        return new AccountItemGlStatistics(context.getId(), context.getAccountGroup(), elapsedMs, visitedJobs, stats);
+        p.println("========================================");
+
+
+        JobReportingRecord record = factory.create(context, stats, fileWriter.getAllocation(), JobType.CONDITIONAL);
+
+        p.println("JOB REPORTING RECORD");
+        p.println(record);
+
+        repository.save(session, record);
+
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob)
@@ -65,7 +82,7 @@ public class AccountItemGL implements AccountItemSource {
             Rule rule = findRule(parent, child);
 
             if (rule != null) {
-                AccountItemSource source = rule.createSource(child, context.getParentDate());
+                BaseWorkingVolumeCollector source = new BaseWorkingVolumeCollector(child,context.getParentDate(),fileWriter);
                 source.collectChildren(session, p, extractorJob);
                 stats.add(source.getStats());
                 continue;
@@ -74,13 +91,7 @@ public class AccountItemGL implements AccountItemSource {
             if (isMergeRTX(parentDefinitionName, childDefinitionName)) {
 
                 Set<String> keys = RTXService.getDocumentKeys(child,"OUT_TABLE", RTXSchemas.DT);
-                stats.setOpen(fileWriter.writeItemsToFile(session,extractorJob,"proposed",keys));
-
-                //stats.setOpen(JobParameterHelper.getIntParameter(child, "OUT_ROWCOUNT"));
-                // TODO verify if return should be changed to continue
-                // Assumption:
-                // mergeRTX is the final relevant step in this AccountItemGL branch.
-                // Everything needed for KPI reporting should already be collected.
+                stats.setProposed(fileWriter.writeItemsToFile(session,extractorJob,"proposed",keys));
                 return;
             }
 

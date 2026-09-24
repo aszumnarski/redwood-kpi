@@ -15,20 +15,19 @@ import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
 import java.io.PrintWriter;
 import java.util.Set;
 
-public class BaseWorkingVolumeCollector implements AccountItemSource {
+public class BaseWorkingVolumeCollector {
     private final AccountItemContext context;
     private final CollectorStats stats;
     private final ResultFileWriter fileWriter;
 
-    public BaseWorkingVolumeCollector(Job job, DateTimeZone parentDate) throws Exception {
+    public BaseWorkingVolumeCollector(Job job, DateTimeZone parentDate, ResultFileWriter fileWriter) throws Exception {
 
         this.context = new AccountItemContext(job, parentDate);
         this.stats = new CollectorStats();
-        this.fileWriter = new ResultFileWriter(context, "conditional");
+        this.fileWriter = fileWriter;
 
     }
 
-    @Override
     public void collectChildren(SchedulerSession session, PrintWriter p, Job extractorJob) throws Exception {
         findBaseWorking(session,context.getJob(),extractorJob);
     }
@@ -49,11 +48,10 @@ public class BaseWorkingVolumeCollector implements AccountItemSource {
     }
 
     private void collectStatistics(SchedulerSession session,Job job,Job extractorJob) throws Exception {
-        stats.setOpen(JobParameterHelper.getIntParameter(job, "RuleSet1RowCount"));
 
         Set<String> keys = RTXService.getDocumentKeys(job,"RuleSet1", RTXSchemas.DT);
         stats.setOpen(fileWriter.writeItemsToFile(session,extractorJob,"total",keys));
-        //stats.setTotalCollectedItems(stats.getOpen());
+
     }
 
 
@@ -61,12 +59,10 @@ public class BaseWorkingVolumeCollector implements AccountItemSource {
         return parentDefinitionName.startsWith("CUS_DT_BSC") && parentDefinitionName.toLowerCase().contains("baseworking");
     }
 
-    @Override
     public AccountItemContext getContext() {
         return context;
     }
 
-    @Override
     public CollectorStats getStats() {
         return stats;
     }

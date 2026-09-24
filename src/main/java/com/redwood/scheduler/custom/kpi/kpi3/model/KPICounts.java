@@ -7,6 +7,43 @@ public class KPICounts
     private int cleared;
     private int errors;
 
+
+    public void addOpen(int value)
+    {
+        open += value;
+    }
+
+    public void addProposed(int value)
+    {
+        proposed += value;
+    }
+
+    public void addCleared(int value)
+    {
+        cleared += value;
+    }
+
+    public void addErrors(int value)
+    {
+        errors += value;
+    }
+
+    public void add(KPICounts other)
+    {
+        open += other.open;
+        proposed += other.proposed;
+        cleared += other.cleared;
+        errors += other.errors;
+    }
+
+    public void clear()
+    {
+        open = 0;
+        proposed = 0;
+        cleared = 0;
+        errors = 0;
+    }
+
     public int getOpen() {
         return open;
     }
@@ -38,4 +75,16 @@ public class KPICounts
     public void setErrors(int errors) {
         this.errors = errors;
     }
+
+    @Override
+    public String toString()
+    {
+        return "KPICounts{" +
+                "open=" + open +
+                ", proposed=" + proposed +
+                ", cleared=" + cleared +
+                ", errors=" + errors +
+                '}';
+    }
+
 }

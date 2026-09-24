@@ -58,7 +58,6 @@ public class ReportingAggregator
             return;
         }
 
-        existing.setSelected(record.getSelected());
         existing.setCleared(record.getCleared());
         existing.setError(record.getError());
     }

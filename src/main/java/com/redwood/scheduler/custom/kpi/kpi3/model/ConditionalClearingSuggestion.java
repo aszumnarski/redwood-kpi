@@ -5,9 +5,6 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.custom.kpi.kpi3.config.AccountItemType;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
-import com.redwood.scheduler.custom.kpi.kpi3.date.PeriodUtil;
-import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
-import com.redwood.scheduler.custom.kpi.kpi3.monitoring.AccountItemGlStatistics;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
 
@@ -34,7 +31,6 @@ public class ConditionalClearingSuggestion {
     private final ScanStats scanStats;
     private final Map<String, Long> sourceTimes = new HashMap<>();
     private final Map<String, Integer> sourceCounts = new HashMap<>();
-    private final List<AccountItemGlStatistics> accountItemGlStats = new ArrayList<>();
 
 
     public ConditionalClearingSuggestion(Job topLevelJob) throws Exception {
@@ -48,38 +44,8 @@ public class ConditionalClearingSuggestion {
 
         scan(session, topLevelJob, p, extractorJob);
         printStats(p);
-        createSummaryFile(session, extractorJob);
     }
 
-    private void createSummaryFile(SchedulerSession session, Job extractorJob) throws Exception {
-
-        if (accountItemGlStats.isEmpty()) {
-            return;
-        }
-
-        AccountItemContext context = new AccountItemContext(topLevelJob, topLevelJob.getRunStart());
-        String period = PeriodUtil.getPeriod(context.getRunEndDate());
-        String companyCode = context.getCompanyCode();
-        String fileName = "conditional_summary.csv";
-
-        boolean firstWrite = extractorJob.getJobFileByName(fileName) == null;
-
-        StringBuilder sb = new StringBuilder();
-        if (firstWrite) sb.append("Period;Company Code;Type;Total Open Item;Proposed;Account Item");
-        boolean firstRow = true;
-        for (AccountItemGlStatistics stat : accountItemGlStats) {
-            if (firstWrite || !firstRow) {
-                sb.append("\n");
-            }
-            sb.append(stat.toSummaryCsv(period, companyCode));
-            firstRow = false;
-        }
-
-        ResultFileWriter fileWriter = new ResultFileWriter();
-
-
-        fileWriter.writeItemsToNamedFile(session, extractorJob, fileName, Collections.singletonList(sb.toString()));
-    }
 
     private void printStats(PrintWriter p) {
         p.println("ConditionalClearingSuggestion stats: " + scanStats);
@@ -104,27 +70,9 @@ public class ConditionalClearingSuggestion {
                                     " | avgMs=" + (totalMs / count));
                 });
 
-        //printTop(p);
-    }
-
-    private void printTop(PrintWriter p) {
-        p.println();
-        p.println("TOP ACCOUNTITEMGL");
-        p.println("========================================");
-
-        accountItemGlStats.stream()
-                .sorted(
-                        Comparator.comparingLong(
-                                        AccountItemGlStatistics::getElapsedMs)
-                                .reversed())
-                //.limit(20)
-                .forEach(p::println);
-
-        p.println();
-        p.println("TOP ACCOUNTITEMGL BY RULESET ROWS");
-        p.println("========================================");
 
     }
+
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob) throws Exception {
         for (Job child : parent.getChildJobs()) {
@@ -154,13 +102,21 @@ public class ConditionalClearingSuggestion {
     }
 
     private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job extractorJob) throws Exception {
+
+        if (rule.accountItemType() == AccountItemType.CONDITIONAL)
+        {
+            p.println(
+                    "[LEGACY] Conditional review chain detected. " +
+                            "Skipping legacy CONDITIONAL collector. " +
+                            "Production migrated to CONDITIONAL_GL in Dec-2024.");
+
+            return;
+        }
+
         AccountItemSource source = rule.createSource(child, topLevelJob.getRunStart());
         scanStats.incrementCreatedSources();
         long start = System.currentTimeMillis();
         source.collectChildren(session, p, extractorJob);
-        if (source instanceof AccountItemGL gl) {
-            //accountItemGlStats.add(gl.getStatistics());
-        }
         long elapsed = System.currentTimeMillis() - start;
         String sourceName = source.getClass().getSimpleName();
         sourceTimes.merge(sourceName, elapsed, Long::sum);
