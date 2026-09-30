@@ -3,13 +3,10 @@ package com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.aggregation;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.JobFile;
 import com.redwood.scheduler.api.model.SchedulerSession;
-import com.redwood.scheduler.custom.kpi.kpi3.file.FileKey;
-import com.redwood.scheduler.custom.kpi.kpi3.file.FileKeyCodec;
-import com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService;
+import com.redwood.scheduler.custom.kpi.kpi3.file.*;
 import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.model.KPICounts;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.csv.ReportingCsvWriter;
-import com.redwood.scheduler.custom.kpi.kpi3.file.FileAllocation;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingRecord;
 import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
 
@@ -39,6 +36,7 @@ public class VolumeAggregator
         this.err = err;
     }
 
+
     public JobFile collect()
             throws Exception
     {
@@ -65,11 +63,11 @@ public class VolumeAggregator
         JobFile jf = JobFileService.createJobFile(session, job, fileName);
         try (FileOutputStream fos = new FileOutputStream(jf.getFileName()))
         {
-            JobFileService.write(fos, ReportingCsvWriter.getHeader());
+            ResultFileWriter.write(fos, ReportingCsvWriter.getHeader());
             for(ReportingRecord row:aggregator.getRecords())
             {
                 if(row.isEmpty()) continue;
-                JobFileService.write(fos, ReportingCsvWriter.toCsv(row));
+                ResultFileWriter.write(fos, ReportingCsvWriter.toCsv(row));
             }
         }
         return jf;
@@ -250,7 +248,7 @@ public class VolumeAggregator
         {
             for(String chain:missingChains)
             {
-                JobFileService.write(fos, chain);
+                ResultFileWriter.write(fos, chain);
             }
         }
     }

@@ -3,10 +3,14 @@ package com.redwood.scheduler.custom.kpi.kpi3.model;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.model.enumeration.JobStatus;
+import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ClearingResultProcessor;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.factory.JobReportingRecordFactory;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReportingRecord;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.JobReportingRepository;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
 
@@ -33,6 +37,9 @@ public class ConditionalClearingRequest {
     private final Map<String, Long> sourceTimes = new HashMap<>();
     private final Map<String, Integer> sourceCounts = new HashMap<>();
 
+    private final JobReportingRecordFactory factory;
+    private final JobReportingRepository repository;
+
 
     public ConditionalClearingRequest(Job j)
             throws Exception {
@@ -41,6 +48,9 @@ public class ConditionalClearingRequest {
         this.scanStats = new ScanStats();
         this.fileWriter = new ResultFileWriter(context, "conditional");
         this.resultProcessor = new ClearingResultProcessor(fileWriter, RTXSchemas.CONDITIONAL);
+
+        this.factory = new JobReportingRecordFactory();
+        this.repository = new JobReportingRepository();
 
     }
 
@@ -72,6 +82,13 @@ public class ConditionalClearingRequest {
                                     " | totalMs=" + totalMs +
                                     " | avgMs=" + (totalMs / count));
                 });
+
+        JobReportingRecord record = factory.create(context, stats, fileWriter.getAllocation(), JobType.CONDITIONAL);
+
+        p.println("JOB REPORTING RECORD");
+        p.println(record);
+
+        repository.save(session, record);
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job job)

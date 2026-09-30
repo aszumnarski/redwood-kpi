@@ -7,11 +7,12 @@ import com.redwood.scheduler.custom.kpi.kpi3.date.PeriodUtil;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemContext;
 
 import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.*;
 
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.FileStatistics;
-import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.createJobFile;
-import static com.redwood.scheduler.custom.kpi.kpi3.file.JobFileService.write;
+
+
 
 public class ResultFileWriter
 {
@@ -56,7 +57,7 @@ public class ResultFileWriter
         if (jobFile == null)
         {
             FILE_STATS.miss();
-            jobFile = createJobFile(session, job, fileName);
+            jobFile = JobFileService.createJobFile(session, job, fileName);
             append = false;
         }else {
             FILE_STATS.hit();
@@ -105,6 +106,15 @@ public class ResultFileWriter
     {
         return FILE_STATS;
     }
+
+    public static void write(OutputStream out, String line)
+            throws Exception
+    {
+        if(out == null) return;
+        out.write(line.getBytes());
+        out.write('\n');
+    }
+
 
 }
 

@@ -56,7 +56,7 @@ public class JobReportingRecord
 
     //files
 
-    private FileAllocation sourceFiles;
+    private FileAllocation sourceFiles = new FileAllocation();
 
 
     public double getMatchingRate()

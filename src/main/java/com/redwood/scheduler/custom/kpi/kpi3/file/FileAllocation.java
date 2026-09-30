@@ -2,6 +2,7 @@ package com.redwood.scheduler.custom.kpi.kpi3.file;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class FileAllocation
 {
@@ -114,5 +115,21 @@ public class FileAllocation
                 ", conditional=" + conditional +
                 ", certId=" + certId +
                 '}';
+    }
+
+    public void addTotalFiles(List<String> strings) {
+        total.addAll(strings);
+    }
+
+    public void addSelectedFiles(List<String> strings) {
+        selected.addAll(strings);
+    }
+
+    public void addClearedFiles(List<String> strings) {
+        cleared.addAll(strings);
+    }
+
+    public void addErrorFiles(List<String> strings) {
+        errors.addAll(strings);
     }
 }

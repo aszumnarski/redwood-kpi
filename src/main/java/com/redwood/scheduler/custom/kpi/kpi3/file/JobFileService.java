@@ -5,8 +5,6 @@ import com.redwood.scheduler.api.model.JobFile;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.model.enumeration.JobFileType;
 
-import java.io.OutputStream;
-
 public class JobFileService {
 
     public static JobFile createJobFile(SchedulerSession session, Job j, String fileName)
@@ -33,11 +31,5 @@ public class JobFileService {
         }
         return lastFileOrder;
     }
-    public static void write(OutputStream out, String line)
-            throws Exception
-    {
-        if(out == null) return;
-        out.write(line.getBytes());
-        out.write('\n');
-    }
+
 }

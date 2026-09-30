@@ -36,6 +36,10 @@ public class KPICounts
         errors += other.errors;
     }
 
+    public boolean isEmpty() {
+        return open == 0 && proposed == 0 && cleared == 0 && errors == 0;
+    }
+
     public void clear()
     {
         open = 0;
