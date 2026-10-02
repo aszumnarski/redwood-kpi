@@ -1,4 +1,4 @@
-package com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.aggregation;
+package com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.aggregation;
 
 import com.redwood.scheduler.api.date.DateTimeZone;
 import com.redwood.scheduler.api.job.UserJobContext;
@@ -11,10 +11,10 @@ import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
 import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReportingRecord;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.JobReportingRepository;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.aggregation.AggregationRecord;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.csv.ReportingCsvWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.csv.ReportingCsvSerializer;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingKey;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingRecord;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.repository.ReportingRepository;
 import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.BufferedReader;
@@ -23,7 +23,7 @@ import java.util.*;
 
 import static com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.aggregation.VolumeAggregator.ENCODING;
 
-public class JobReportingAggregator {
+public class SummaryAggregator {
 
     private final Set<String> processedFiles = new HashSet<>();
     private final Map<String, Integer> duplicatedReads = new HashMap<>();
@@ -38,23 +38,26 @@ public class JobReportingAggregator {
 
         for (JobReportingRecord record : records) {
 
+            if (isEmpty(record)) continue;
+
             ReportingKey key = getKeyFromRecord(record);
             AggregationRecord aggregationRecord = aggregatedData.computeIfAbsent(key, AggregationRecord::new);
-            if (!isEmpty(record)) add(session, aggregationRecord, record, log);
+            add(session, aggregationRecord, record, log);
 
         }
 
         if (aggregatedData.isEmpty()) return;
 
+        persistSummary(session, aggregatedData.values());
 
         String fileName = JobParameterHelper.getParameter(collectorJob, "IN_FILENAME");
 
         List<String> content = new ArrayList<>();
-        content.add(ReportingCsvWriter.getHeader());
+        content.add(ReportingCsvSerializer.getHeader());
 
         for (ReportingRecord row : aggregatedData.values().stream().map(AggregationRecord::toReportingRecord).toList()) {
             if (row.isEmpty()) continue;
-            content.add(ReportingCsvWriter.toCsv(row));
+            content.add(ReportingCsvSerializer.toCsv(row));
         }
 
         if (!duplicatedReads.isEmpty())
@@ -69,6 +72,21 @@ public class JobReportingAggregator {
         jobContext.setJobOutputParameter("OUT_FILE_SOURCE", jobContext.getJobId() + ":" + fileName);
 
 
+    }
+
+    private void persistSummary(SchedulerSession session, Collection<AggregationRecord> records)
+            throws Exception
+    {
+        ReportingRepository repository = new ReportingRepository();
+
+        for (AggregationRecord aggregation : records)
+        {
+            ReportingRecord summary = aggregation.toReportingRecord();
+
+            if (summary.isEmpty()) continue;
+
+            repository.save(session, summary);
+        }
     }
 
     private void add(SchedulerSession session, AggregationRecord summary, JobReportingRecord record, Logger log) throws Exception {

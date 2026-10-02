@@ -14,7 +14,7 @@ public class AccountItemContext
     private final DateTimeZone runEndDate;
     private final String status;
     private final String name;
-    private final String accountGroup;
+    private final String accountItem;
     private final String companyCode;
 
     public AccountItemContext(Job job, DateTimeZone parentDate)
@@ -28,7 +28,7 @@ public class AccountItemContext
         this.runEndDate = job.getRunEnd();
         this.status = job.getStatus().getTranslationEN();
         this.name = job.getJobDefinition().getMasterJobDefinition().getName();
-        this.accountGroup = JobParameterHelper.getAccountGroups(job);
+        this.accountItem = JobParameterHelper.getAccountItems(job);
         this.companyCode = JobParameterHelper.getParameter(job, "BUKRS");
     }
 
@@ -67,9 +67,9 @@ public class AccountItemContext
         return name;
     }
 
-    public String getAccountGroup()
+    public String getAccountItem()
     {
-        return accountGroup;
+        return accountItem;
     }
 
     public String getCompanyCode()

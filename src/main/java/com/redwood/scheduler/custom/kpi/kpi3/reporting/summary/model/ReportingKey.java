@@ -44,6 +44,15 @@ public class ReportingKey
         return new ReportingKey(key.period(), key.companyCode(), key.accountGroup(), key.type());
     }
 
+    public static ReportingKey parse(String key){
+        String[] parts = key.split(";",-1);
+        if(parts.length != 4)
+        {
+            throw new IllegalArgumentException("Invalid ReportingKey: " + key);
+        }
+        return new ReportingKey(parts[0],parts[1],parts[2],parts[3]);
+    }
+
     @Override
     public boolean equals(Object o)
     {

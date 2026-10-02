@@ -8,6 +8,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
 import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.factory.JobReportingRecordFactory;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReportingRecord;
@@ -17,8 +18,8 @@ import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
 import com.redwood.scheduler.custom.kpi.kpi3.service.BaseWorkingVolumeCollector;
 
 import java.io.PrintWriter;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class AccountItemGL implements AccountItemSource {
 
@@ -35,6 +36,8 @@ public class AccountItemGL implements AccountItemSource {
     private final JobReportingRecordFactory factory;
     private final JobReportingRepository repository;
 
+    private final String userId;
+
 
     public AccountItemGL(Job job, DateTimeZone parentDate)
             throws Exception {
@@ -44,6 +47,8 @@ public class AccountItemGL implements AccountItemSource {
 
         this.factory = new JobReportingRecordFactory();
         this.repository = new JobReportingRepository();
+
+        this.userId = JobParameterHelper.getParameter(job,"TASK_SUPERVISOR");
 
     }
 
@@ -64,13 +69,26 @@ public class AccountItemGL implements AccountItemSource {
         p.println("========================================");
 
 
-        JobReportingRecord record = factory.create(context, stats, fileWriter.getAllocation(), JobType.CONDITIONAL);
+        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), JobType.CONDITIONAL,stringToSet(userId),null);
 
         p.println("JOB REPORTING RECORD");
         p.println(record);
 
         repository.save(session, record);
 
+    }
+
+    private static Set<String> stringToSet(String input)
+    {
+        if (input == null || input.isBlank())
+        {
+            return Collections.emptySet();
+        }
+
+        return Arrays.stream(input.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob)
@@ -120,5 +138,9 @@ public class AccountItemGL implements AccountItemSource {
     @Override
     public CollectorStats getStats() {
         return stats;
+    }
+
+    public String getUserId() {
+        return userId;
     }
 }

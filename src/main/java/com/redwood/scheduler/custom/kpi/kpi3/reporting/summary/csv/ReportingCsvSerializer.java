@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class ReportingCsvWriter {
+public class ReportingCsvSerializer {
 
     public static String getHeader()
     {

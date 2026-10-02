@@ -43,8 +43,8 @@ public class ReportingAggregator
             return;
         }
 
-        existing.setTotal(record.getTotal());
-        existing.setProposed(record.getProposed());
+        existing.getCounts().setOpen(record.getCounts().getOpen());
+        existing.getCounts().setProposed(record.getCounts().getProposed());
     }
 
     public void mergeConditionalResults(
@@ -58,8 +58,9 @@ public class ReportingAggregator
             return;
         }
 
-        existing.setCleared(record.getCleared());
-        existing.setError(record.getError());
+        existing.getCounts().setCleared(record.getCounts().getCleared());
+        existing.getCounts().setErrors(record.getCounts().getErrors());
+
     }
 
 }

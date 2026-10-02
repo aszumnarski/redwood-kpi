@@ -79,9 +79,9 @@ public class JobReportingRepository {
 
     private TableDefinition getTableDefinitionByName(SchedulerSession session) {
 
-        String DATABASE_TABLEDEFINITION_NAME = "CUS_TABLE_KPI_DATABASE";
+        String DATABASE_TABLE_DEFINITION_NAME = "CUS_TD_KPI_JOBS_DATABASE";
 
-        Iterator<TableDefinition> it = session.executeObjectQuery(TableDefinition.TYPE, "select * from TableDefinition where Name = ?", DATABASE_TABLEDEFINITION_NAME);
+        Iterator<TableDefinition> it = session.executeObjectQuery(TableDefinition.TYPE, "select * from TableDefinition where Name = ?", DATABASE_TABLE_DEFINITION_NAME);
         return it.hasNext() ? it.next() : null;
     }
 

@@ -36,7 +36,7 @@ public class Collector
 
         String period = PeriodUtil.getPeriod(j.getRunStart());
         String bukrs = JobParameterHelper.getParameter(j,"BUKRS");
-        String accountGroup = JobParameterHelper.getAccountGroups(j);
+        String accountGroup = JobParameterHelper.getAccountItems(j);
         workItems.add(new WorkItem(period,type,bukrs,accountGroup,j));
     }
 

@@ -6,7 +6,7 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.custom.kpi.kpi3.file.*;
 import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.model.KPICounts;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.csv.ReportingCsvWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.csv.ReportingCsvSerializer;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingRecord;
 import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
 
@@ -63,11 +63,11 @@ public class VolumeAggregator
         JobFile jf = JobFileService.createJobFile(session, job, fileName);
         try (FileOutputStream fos = new FileOutputStream(jf.getFileName()))
         {
-            ResultFileWriter.write(fos, ReportingCsvWriter.getHeader());
+            ResultFileWriter.write(fos, ReportingCsvSerializer.getHeader());
             for(ReportingRecord row:aggregator.getRecords())
             {
                 if(row.isEmpty()) continue;
-                ResultFileWriter.write(fos, ReportingCsvWriter.toCsv(row));
+                ResultFileWriter.write(fos, ReportingCsvSerializer.toCsv(row));
             }
         }
         return jf;
@@ -100,9 +100,7 @@ public class VolumeAggregator
             {
                 if (!allocation.getMissings().isEmpty())
                 {
-                    missingChains.addAll(
-                            getUniqueLines(
-                                    allocation.getMissings()));
+                    missingChains.addAll(getUniqueLines(allocation.getMissings()));
                 }
 
                 continue;

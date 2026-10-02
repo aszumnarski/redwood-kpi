@@ -6,6 +6,7 @@ import com.redwood.scheduler.api.model.enumeration.JobStatus;
 import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ClearingResultProcessor;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.factory.JobReportingRecordFactory;
@@ -15,13 +16,15 @@ import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
 
 import java.io.PrintWriter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 
 public class ConditionalClearingRequest {
+
+    private static final Pattern LINK_ID_PATTERN = Pattern.compile("ProcessID(\\d+)");
 
     private static final String JOB_EXCEL = "CUS_ConvertExcel2CSV2RTX_NoReplaceAll";
     private static final String JOB_FB05 = "FCA_SAP_Tran_FB05_Clearing";
@@ -40,6 +43,10 @@ public class ConditionalClearingRequest {
     private final JobReportingRecordFactory factory;
     private final JobReportingRepository repository;
 
+    private final String userId;
+
+    private final Long linkId;
+
 
     public ConditionalClearingRequest(Job j)
             throws Exception {
@@ -51,6 +58,31 @@ public class ConditionalClearingRequest {
 
         this.factory = new JobReportingRecordFactory();
         this.repository = new JobReportingRepository();
+
+        this.userId = JobParameterHelper.getParameter(j,"MX_To");
+
+        this.linkId = setLinkId(JobParameterHelper.getParameter(j,"IN_FILE_FROM_EP"));
+
+    }
+
+    private Long setLinkId(String fileName) {
+
+            if (fileName == null || fileName.isEmpty())
+            {
+                return null;
+            }
+
+            Matcher matcher = LINK_ID_PATTERN.matcher(fileName);
+
+            if (matcher.find())
+            {
+                return Long.parseLong(matcher.group(1));
+            }
+
+            return null;
+
+
+            //TODO: add fallback = get from RTX from CUS_ConvertExcel2CSV2RTX_NoReplaceAll (Step 3 - ConvertRTX)
 
     }
 
@@ -83,12 +115,25 @@ public class ConditionalClearingRequest {
                                     " | avgMs=" + (totalMs / count));
                 });
 
-        JobReportingRecord record = factory.create(context, stats, fileWriter.getAllocation(), JobType.CONDITIONAL);
+        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), JobType.CONDITIONAL, stringToSet(userId),linkId);
 
         p.println("JOB REPORTING RECORD");
         p.println(record);
 
         repository.save(session, record);
+    }
+
+    private static Set<String> stringToSet(String input)
+    {
+        if (input == null || input.isBlank())
+        {
+            return Collections.emptySet();
+        }
+
+        return Arrays.stream(input.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter p, Job job)
@@ -150,4 +195,11 @@ public class ConditionalClearingRequest {
         }
     }
 
+    public String getUserId() {
+        return userId;
+    }
+
+    public Long getLinkId() {
+        return linkId;
+    }
 }

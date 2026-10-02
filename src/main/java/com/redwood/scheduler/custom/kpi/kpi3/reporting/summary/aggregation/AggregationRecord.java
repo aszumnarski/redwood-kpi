@@ -45,10 +45,10 @@ public class AggregationRecord
     {
         ReportingRecord record = new ReportingRecord(key);
 
-        record.setTotal(openDocs.isEmpty() ? fallbackCounts.getOpen() : openDocs.size());
-        record.setProposed(proposedDocs.isEmpty() ? fallbackCounts.getProposed() : proposedDocs.size());
-        record.setCleared(clearedDocs.isEmpty() ? fallbackCounts.getCleared() : clearedDocs.size());
-        record.setError(errorDocs.isEmpty() ? fallbackCounts.getErrors() : errorDocs.size());
+        record.getCounts().setOpen(openDocs.isEmpty() ? fallbackCounts.getOpen() : openDocs.size());
+        record.getCounts().setProposed(proposedDocs.isEmpty() ? fallbackCounts.getProposed() : proposedDocs.size());
+        record.getCounts().setCleared(clearedDocs.isEmpty() ? fallbackCounts.getCleared() : clearedDocs.size());
+        record.getCounts().setErrors(errorDocs.isEmpty() ? fallbackCounts.getErrors() : errorDocs.size());
 
         return record;
     }

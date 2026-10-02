@@ -16,7 +16,7 @@ public class JobParameterHelper {
         return answer;
     }
 
-    public static String getAccountGroups(Job j)
+    public static String getAccountItems(Job j)
             throws Exception {
         String accountGroups = getParameter(j, "CUS_ACCOUNT_GROUP");
         if (accountGroups == null) accountGroups = getParameter(j, "ACCOUNT_ITEMS_LIST_COMMA");

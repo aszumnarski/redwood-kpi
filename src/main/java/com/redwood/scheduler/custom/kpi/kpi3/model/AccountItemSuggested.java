@@ -13,7 +13,11 @@ import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.JobRepo
 import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
 
 import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class AccountItemSuggested implements AccountItemSource {
     private static final List<String> BASE_PARENTS = List.of("CUS_TD_BSC_SuggestedClearing_OneSided_MASTER_SHERPAX", "CUS_TD_BSC_SuggestedClearing_OneSided_MASTER");
@@ -30,6 +34,9 @@ public class AccountItemSuggested implements AccountItemSource {
     private final JobReportingRecordFactory factory;
     private final JobReportingRepository repository;
 
+    private final String userId;
+
+
     public AccountItemSuggested(Job job, DateTimeZone parentDate) throws Exception {
 
         this.context = new AccountItemContext(job, parentDate);
@@ -38,6 +45,7 @@ public class AccountItemSuggested implements AccountItemSource {
         this.factory = new JobReportingRecordFactory();
         this.repository = new JobReportingRepository();
 
+        this.userId = JobParameterHelper.getParameter(job,"TASK_SUPERVISOR");
     }
 
     @Override
@@ -58,12 +66,25 @@ public class AccountItemSuggested implements AccountItemSource {
 
         p.println("========================================");
 
-        JobReportingRecord record = factory.create(context, stats, fileWriter.getAllocation(), JobType.SUGGESTED);
+        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), JobType.SUGGESTED,stringToSet(userId),null);
 
         p.println("JOB REPORTING RECORD");
         p.println(record);
 
         repository.save(session, record);
+    }
+
+    private static Set<String> stringToSet(String input)
+    {
+        if (input == null || input.isBlank())
+        {
+            return Collections.emptySet();
+        }
+
+        return Arrays.stream(input.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -113,5 +134,9 @@ public class AccountItemSuggested implements AccountItemSource {
 
         stats.setCounts(counts);
 
+    }
+
+    public String getUserId() {
+        return userId;
     }
 }

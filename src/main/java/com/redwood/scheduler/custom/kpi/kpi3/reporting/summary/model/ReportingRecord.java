@@ -6,7 +6,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.model.KPICounts;
 public class ReportingRecord {
 
     private final ReportingKey reportingKey;
-    private final KPICounts counts = new KPICounts();
+    private KPICounts counts = new KPICounts();
 
     public ReportingRecord(FileKey key) {
         this.reportingKey = ReportingKey.from(key);
@@ -38,6 +38,10 @@ public class ReportingRecord {
         return reportingKey.getType();
     }
 
+    public KPICounts getCounts(){
+        return counts;
+    }
+
     public String getAccountGroup() {
         return reportingKey.getAccountGroup();
     }
@@ -67,11 +71,10 @@ public class ReportingRecord {
     @Override
     public String toString()
     {
-        return reportingKey + ";"
-                + counts.getOpen() + ";"
-                + counts.getProposed() + ";"
-                + counts.getCleared() + ";"
-                + counts.getErrors();
+        return reportingKey + ";" + counts.toCsv();
     }
 
+    public void setKPICounts(KPICounts counts) {
+        this.counts = counts;
+    }
 }

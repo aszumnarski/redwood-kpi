@@ -12,51 +12,45 @@ public class JobReportingRecord
 
     // Business dimensions
 
-    private String period;
+    private String period;       //taken from table name
 
-    private String companyCode;
+    private String companyCode; //we have it
 
-    private String accountItem;
+    private String accountItem; //we have it
 
-    private String accountType;
+    private String accountType; //we have it
 
-    private JobType clearingType;
+    private JobType clearingType; //we have it
 
     // Job info
 
-    private Long jobId;
+    private Long jobId;  //taken from tableKey
 
-    private String jobName;
+    private String jobName; //we have it
 
-    private DateTimeZone runDate;
+    private DateTimeZone runDate; //we have it
 
-    private DateTimeZone scheduleDate;
+    private DateTimeZone scheduleDate; //we have it
 
-    private String status;
+    private String status; //we have it
 
-    private String errorDescription;
+    private String errorDescription; //we need it!
 
     // User activity
 
-    private Set<String> userIds;
-
-    private String uploadedBy;
-
-    private DateTimeZone proposalGenerationDate;
+    private Set<String> userIds; //we need it!
 
     // Conditional-specific
 
-    private Set<Long> linkIds;
-
-    private Set<DateTimeZone> uploadDates;
+    private Long linkId;// we need it but i would opt for String not set of strings
 
     // KPI metrics
 
-    private KPICounts counts = new KPICounts();
+    private KPICounts counts = new KPICounts();//we have it
 
     //files
 
-    private FileAllocation sourceFiles = new FileAllocation();
+    private FileAllocation sourceFiles = new FileAllocation();//we have it
 
 
     public double getMatchingRate()
@@ -98,8 +92,6 @@ public class JobReportingRecord
     {
         this.counts = counts;
     }
-
-
 
     public String getPeriod() {
         return period;
@@ -197,38 +189,13 @@ public class JobReportingRecord
         this.userIds = userIds;
     }
 
-    public String getUploadedBy() {
-        return uploadedBy;
+    public Long getLinkId() {
+        return linkId;
     }
 
-    public void setUploadedBy(String uploadedBy) {
-        this.uploadedBy = uploadedBy;
+    public void setLinkId(Long linkId) {
+        this.linkId = linkId;
     }
-
-    public DateTimeZone getProposalGenerationDate() {
-        return proposalGenerationDate;
-    }
-
-    public void setProposalGenerationDate(DateTimeZone proposalGenerationDate) {
-        this.proposalGenerationDate = proposalGenerationDate;
-    }
-
-    public Set<Long> getLinkIds() {
-        return linkIds;
-    }
-
-    public void setLinkIds(Set<Long> linkIds) {
-        this.linkIds = linkIds;
-    }
-
-    public Set<DateTimeZone> getUploadDates() {
-        return uploadDates;
-    }
-
-    public void setUploadDates(Set<DateTimeZone> uploadDates) {
-        this.uploadDates = uploadDates;
-    }
-
 
     public void setSourceFiles(FileAllocation allocation) {
         this.sourceFiles = allocation;

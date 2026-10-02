@@ -91,4 +91,8 @@ public class KPICounts
                 '}';
     }
 
+    public String toCsv(){
+        return open + ";" + proposed + ";" + cleared + ";" + errors;
+    }
+
 }

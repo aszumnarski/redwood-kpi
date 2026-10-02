@@ -6,6 +6,7 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ClearingResultProcessor;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
+import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemContext;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemSource;
 import com.redwood.scheduler.custom.kpi.kpi3.model.ClearingResult;
@@ -17,7 +18,10 @@ import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
 
 import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class AutoOldLeafCollector implements AccountItemSource {
     private final AccountItemContext context;
@@ -31,6 +35,8 @@ public class AutoOldLeafCollector implements AccountItemSource {
     private final JobReportingRecordFactory factory;
     private final JobReportingRepository repository;
     private final JobType jobType;
+
+    private final String userId;
 
     public AutoOldLeafCollector(
             Job job,
@@ -46,6 +52,8 @@ public class AutoOldLeafCollector implements AccountItemSource {
         this.factory = new JobReportingRecordFactory();
         this.repository = new JobReportingRepository();
         this.jobType = jobType;
+
+        this.userId = JobParameterHelper.getParameter(job,"TASK_SUPERVISOR");
     }
 
     private boolean done()
@@ -59,13 +67,26 @@ public class AutoOldLeafCollector implements AccountItemSource {
         p.println("AutoOldLeafCollector openItemsMs=" + openItemsMs);
         p.println("baseWorkingFound=" + baseWorkingFound + ", fb05Found=" + fb05Found);
 
-        JobReportingRecord record = factory.create(context, stats, fileWriter.getAllocation(), jobType);
+        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), jobType,stringToSet(userId),null);
 
         p.println("JOB REPORTING RECORD");
         p.println(record);
 
         repository.save(session, record);
 
+    }
+
+    private static Set<String> stringToSet(String input)
+    {
+        if (input == null || input.isBlank())
+        {
+            return Collections.emptySet();
+        }
+
+        return Arrays.stream(input.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
     }
 
     private void scan(SchedulerSession session, Job parent, PrintWriter pw, Job extractorJob)

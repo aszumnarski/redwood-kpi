@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class JobReportingMapper {
 
@@ -65,20 +64,8 @@ public class JobReportingMapper {
                     record.setUserIds(stringToSet(column.getColumnValue()));
                     break;
                 }
-                case("uploadedBy"): {
-                    record.setUploadedBy(column.getColumnValue());
-                    break;
-                }
-                case("proposalGenerationDate"): {
-                    record.setProposalGenerationDate(stringToDate(column.getColumnValue()));
-                    break;
-                }
-                case("linkIds"): {
-                    record.setLinkIds(stringToLongSet(column.getColumnValue()));
-                    break;
-                }
-                case("uploadDates"): {
-                    record.setUploadDates(stringToDateSet(column.getColumnValue()));
+                case("linkId"): {
+                    record.setLinkId(Long.parseLong(column.getColumnValue()));
                     break;
                 }
                 case("open"): {
@@ -120,35 +107,6 @@ public class JobReportingMapper {
         }
 
         return record;
-    }
-
-    private static Set<DateTimeZone> stringToDateSet(String input) {
-        if (input == null || input.isBlank())
-        {
-            return Set.of();
-        }
-
-        return Arrays.stream(input.split("\\|"))
-                .map(v -> {
-                    try {
-                        return stringToDate(v);
-                    } catch (ParseException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .collect(Collectors.toSet());
-
-    }
-
-    private static Set<Long> stringToLongSet(String input) {
-        if (input == null || input.isBlank())
-        {
-            return Set.of();
-        }
-
-        return Arrays.stream(input.split("\\|"))
-                .map(Long::parseLong)
-                .collect(Collectors.toSet());
     }
 
     static String dateToString(DateTimeZone date){
@@ -204,10 +162,7 @@ public class JobReportingMapper {
         upsert(repository,key,"status",record.getStatus());
         upsert(repository,key,"errorDescription",record.getErrorDescription());
         upsert(repository,key,"userIds",setToString(record.getUserIds()));
-        upsert(repository,key,"uploadedBy",record.getUploadedBy());
-        upsert(repository,key,"proposalGenerationDate",dateToString(record.getProposalGenerationDate()));
-        upsert(repository,key,"linkIds",longSetToString(record.getLinkIds()));
-        upsert(repository,key,"uploadDates",dateSetToString(record.getUploadDates()));
+        upsert(repository,key,"linkId",String.valueOf(record.getLinkId()));
         upsert(repository,key,"open", String.valueOf(record.getCounts().getOpen()));
         upsert(repository,key,"proposed", String.valueOf(record.getCounts().getProposed()));
         upsert(repository,key,"cleared", String.valueOf(record.getCounts().getCleared()));
@@ -228,31 +183,6 @@ public class JobReportingMapper {
 
         return String.join("|", input);
     }
-
-    private static String dateSetToString(Set<DateTimeZone> input) {
-
-        if (input == null || input.isEmpty())
-        {
-            return null;
-        }
-
-        return input.stream()
-                .map(JobReportingMapper::dateToString)
-                .collect(Collectors.joining("|"));
-
-    }
-
-    private static String longSetToString(Set<Long> input) {
-        if (input == null || input.isEmpty())
-        {
-            return null;
-        }
-
-        return input.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining("|"));
-    }
-
 
     private static void upsert(Table table, String key, String column, String value) {
 

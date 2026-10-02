@@ -37,7 +37,7 @@ public class ResultFileWriter
 
     public String buildFileName(String name){
         String period = PeriodUtil.getPeriod(context.getParentDate());
-        return FileKeyCodec.getFileName(new FileKey(period, context.getCompanyCode(), context.getAccountGroup(), type, name));
+        return FileKeyCodec.getFileName(new FileKey(period, context.getCompanyCode(), context.getAccountItem(), type, name));
     }
 
     public int writeItemsToNamedFile(SchedulerSession session, Job job, String fileName, Collection<String> items) throws Exception
