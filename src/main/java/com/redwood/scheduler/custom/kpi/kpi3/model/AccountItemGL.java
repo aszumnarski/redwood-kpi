@@ -16,6 +16,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.JobRepo
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
 import com.redwood.scheduler.custom.kpi.kpi3.service.BaseWorkingVolumeCollector;
+import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.PrintWriter;
 import java.util.*;
@@ -53,7 +54,7 @@ public class AccountItemGL implements AccountItemSource {
     }
 
     @Override
-    public void collectChildren(SchedulerSession session, PrintWriter p, Job extractorJob)
+    public void collectChildren(SchedulerSession session, PrintWriter p, Job extractorJob, Logger log)
             throws Exception {
         long start = System.currentTimeMillis();
         scan(session, context.getJob(), p, extractorJob);
@@ -69,10 +70,10 @@ public class AccountItemGL implements AccountItemSource {
         p.println("========================================");
 
 
-        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), JobType.CONDITIONAL,stringToSet(userId),null);
+        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), JobType.CONDITIONAL,stringToSet(userId),null,log);
 
-        p.println("JOB REPORTING RECORD");
-        p.println(record);
+        //p.println("JOB REPORTING RECORD");
+        //p.println(record);
 
         repository.save(session, record);
 

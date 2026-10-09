@@ -65,7 +65,7 @@ public class JobReportingMapper {
                     break;
                 }
                 case("linkId"): {
-                    record.setLinkId(Long.parseLong(column.getColumnValue()));
+                    record.setLinkId(Long.parseLong(nvl(column.getColumnValue())));
                     break;
                 }
                 case("open"): {
@@ -100,6 +100,7 @@ public class JobReportingMapper {
                     record.getSourceFiles().addErrorFiles(stringToList(column.getColumnValue()));
                     break;
                 }
+
                 default: throw new IllegalArgumentException("Unknown column: " + column.getColumnName());
 
             }
@@ -108,6 +109,8 @@ public class JobReportingMapper {
 
         return record;
     }
+
+    private static String nvl(String s) { return s == null ? "-1" : s; }
 
     static String dateToString(DateTimeZone date){
         return date == null ? null : date.toFormattedString(DATE_FORMAT);
@@ -153,6 +156,7 @@ public class JobReportingMapper {
     public static void toTableValues(Table repository, JobReportingRecord record) {
         String key = String.valueOf(record.getJobId());
         upsert(repository,key,"companyCode",record.getCompanyCode());
+        if(record.getAccountItem() == null || record.getAccountItem().isEmpty() || "null".equals(record.getAccountItem())) record.setAccountItem("unknown");
         upsert(repository,key,"accountItem",record.getAccountItem());
         upsert(repository,key,"accountType",record.getAccountType());
         upsert(repository,key,"clearingType",record.getClearingType().name());
@@ -186,7 +190,7 @@ public class JobReportingMapper {
 
     private static void upsert(Table table, String key, String column, String value) {
 
-        if (value == null) return;
+        if (value == null || value.isEmpty() || "null".equals(value)) return;
 
         TableValue tv = table.getTableValueBySearchKeySearchColumnName(key, column);
         if (tv == null) {

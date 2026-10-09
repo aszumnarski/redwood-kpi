@@ -6,6 +6,7 @@ import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
 import com.redwood.scheduler.custom.kpi.kpi3.model.WorkItem;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.Stopwatch;
+import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.PrintWriter;
 import java.util.Collection;
@@ -21,7 +22,8 @@ public class WorkItemProcessor
             Iterable<WorkItem> items,
             SchedulerSession session,
             Job extractorJob,
-            PrintWriter p)
+            PrintWriter p,
+            Logger log)
             throws Exception {
 
         Map<String, Long> definitionTimes = new HashMap<>();
@@ -54,7 +56,7 @@ public class WorkItemProcessor
                             : item.getAccountGroup().split(",").length;
 
             Stopwatch stopwatch = new Stopwatch();
-            processWorkItem(item, session, extractorJob, p);
+            processWorkItem(item, session, extractorJob, p,log);
             long elapsedMs = stopwatch.elapsedMs();
 
             totalMs += elapsedMs;
@@ -167,7 +169,7 @@ public class WorkItemProcessor
         p.println("========================================");
         p.println();
     }
-    private void processWorkItem(WorkItem item, SchedulerSession session, Job extractorJob,PrintWriter p)
+    private void processWorkItem(WorkItem item, SchedulerSession session, Job extractorJob, PrintWriter p, Logger log)
             throws Exception
     {
         String definitionName = item.getJob().getJobDefinition().getMasterJobDefinition().getName();
@@ -178,7 +180,7 @@ public class WorkItemProcessor
             fileWriter.writeItemsToNamedFile(session, extractorJob, "missing_chains.csv", Collections.singletonList("Unknown definition found: " + definitionName));
             return;
         }
-        definition.handler.handle(item.getJob(), session, p, extractorJob);
+        definition.handler.handle(item.getJob(), session, p, extractorJob,log);
 
     }
 

@@ -12,6 +12,7 @@ import java.io.PrintWriter;
 import java.util.Iterator;
 
 import com.redwood.scheduler.custom.kpi.kpi3.query.JobQueryBuilder;
+import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 public class ExtractionRunner
 {
@@ -21,14 +22,16 @@ public class ExtractionRunner
     private final SchedulerSession session;
     private final Job extractorJob;
     private final PrintWriter out;
+    private final Logger log;
 
-    public ExtractionRunner(WorkItemProcessor workItemProcessor, Collector collector, SchedulerSession session, Job extractorJob, PrintWriter out)
+    public ExtractionRunner(WorkItemProcessor workItemProcessor, Collector collector, SchedulerSession session, Job extractorJob, PrintWriter out, Logger log)
     {
         this.workItemProcessor = workItemProcessor;
         this.collector = collector;
         this.session = session;
         this.extractorJob = extractorJob;
         this.out = out;
+        this.log = log;
     }
 
     public void execute()
@@ -47,7 +50,7 @@ public class ExtractionRunner
         stopwatch.log(out,"Extractor.execute jobs collected");
         out.println(collector.getStatistics());
         stopwatch.reset();
-        workItemProcessor.processNoSum(collector.getWorkItems(),session, extractorJob,out);
+        workItemProcessor.processNoSum(collector.getWorkItems(),session, extractorJob,out,log);
         stopwatch.log(out,"Extractor.execute jobs processed");
 
         ResultFileWriter writer = new ResultFileWriter();

@@ -7,6 +7,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
+import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.PrintWriter;
 import java.util.*;
@@ -40,9 +41,9 @@ public class ConditionalClearingSuggestion {
 
     }
 
-    public void collectActionItems(SchedulerSession session, PrintWriter p, Job extractorJob) throws Exception {
+    public void collectActionItems(SchedulerSession session, PrintWriter p, Job extractorJob,Logger log) throws Exception {
 
-        scan(session, topLevelJob, p, extractorJob);
+        scan(session, topLevelJob, p, extractorJob,log);
         printStats(p);
     }
 
@@ -74,7 +75,7 @@ public class ConditionalClearingSuggestion {
     }
 
 
-    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob) throws Exception {
+    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob,Logger log) throws Exception {
         for (Job child : parent.getChildJobs()) {
 
             scanStats.incrementVisitedJobs();
@@ -83,11 +84,11 @@ public class ConditionalClearingSuggestion {
 
             if (rule != null) {
                 scanStats.incrementMatchedRules();
-                processRule(rule, child, session, p, extractorJob);
+                processRule(rule, child, session, p, extractorJob,log);
                 continue;
             }
 
-            scan(session, child, p, extractorJob);
+            scan(session, child, p, extractorJob,log);
         }
     }
 
@@ -101,7 +102,7 @@ public class ConditionalClearingSuggestion {
         return null;
     }
 
-    private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job extractorJob) throws Exception {
+    private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job extractorJob, Logger log) throws Exception {
 
         if (rule.accountItemType() == AccountItemType.CONDITIONAL)
         {
@@ -116,7 +117,7 @@ public class ConditionalClearingSuggestion {
         AccountItemSource source = rule.createSource(child, topLevelJob.getRunStart());
         scanStats.incrementCreatedSources();
         long start = System.currentTimeMillis();
-        source.collectChildren(session, p, extractorJob);
+        source.collectChildren(session, p, extractorJob,log);
         long elapsed = System.currentTimeMillis() - start;
         String sourceName = source.getClass().getSimpleName();
         sourceTimes.merge(sourceName, elapsed, Long::sum);

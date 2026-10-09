@@ -8,6 +8,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
+import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.PrintWriter;
 import java.util.HashMap;
@@ -59,10 +60,10 @@ public class SuggestedClearingDIV implements AccountItemSource
     public void collectChildren(
             SchedulerSession session,
             PrintWriter p,
-            Job job)
+            Job job,Logger log)
             throws Exception
     {
-        scan(session, context.getJob(), p, job);
+        scan(session, context.getJob(), p, job,log);
         p.println("SuggestedClearingDIV stats: " + scanStats);
 
         p.println("DIV SOURCE PERFORMANCE");
@@ -96,7 +97,7 @@ public class SuggestedClearingDIV implements AccountItemSource
             SchedulerSession session,
             Job parent,
             PrintWriter p,
-            Job job)
+            Job job, Logger log)
             throws Exception
     {
         for (Job child : parent.getChildJobs())
@@ -108,11 +109,11 @@ public class SuggestedClearingDIV implements AccountItemSource
             if (rule != null)
             {
                 scanStats.incrementMatchedRules();
-                processRule(rule, child, session, p, job);
+                processRule(rule, child, session, p, job,log);
                 continue;
             }
 
-            scan(session, child, p, job);
+            scan(session, child, p, job,log);
         }
     }
 
@@ -131,12 +132,12 @@ public class SuggestedClearingDIV implements AccountItemSource
         return null;
     }
 
-    private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job job) throws Exception
+    private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job job, Logger log) throws Exception
     {
         AccountItemSource source = rule.createSource(child, context.getRunStartDate());
         scanStats.incrementCreatedSources();
         long start = System.currentTimeMillis();
-        source.collectChildren(session, p, job);
+        source.collectChildren(session, p, job,log);
         long elapsed = System.currentTimeMillis() - start;
         String sourceName = source.getClass().getSimpleName();
         sourceTimes.merge(sourceName, elapsed, Long::sum);

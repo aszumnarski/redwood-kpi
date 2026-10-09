@@ -7,6 +7,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.config.AccountItemType;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.Rule;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
+import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.PrintWriter;
 import java.util.List;
@@ -31,13 +32,13 @@ public class AccountItemAutoLedger implements AccountItemSource
     }
 
     @Override
-    public void collectChildren(SchedulerSession session,PrintWriter p,Job extractorJob)
+    public void collectChildren(SchedulerSession session,PrintWriter p,Job extractorJob,Logger log)
             throws Exception
     {
-        scan(session, context.getJob(), p,extractorJob);
+        scan(session, context.getJob(), p,extractorJob,log);
     }
 
-    private void scan(SchedulerSession session, Job parent, PrintWriter p,Job extractorJob)
+    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob, Logger log)
             throws Exception
     {
         for(Job child: parent.getChildJobs())
@@ -48,12 +49,12 @@ public class AccountItemAutoLedger implements AccountItemSource
             if (rule != null)
             {
                 AccountItemSource source = rule.createSource(child, context.getParentDate());
-                source.collectChildren(session, p, extractorJob);
+                source.collectChildren(session, p, extractorJob,log);
                 stats.add(source.getStats());
                 continue;
             }
 
-            scan(session,child,p,extractorJob);
+            scan(session,child,p,extractorJob,log);
         }
     }
 

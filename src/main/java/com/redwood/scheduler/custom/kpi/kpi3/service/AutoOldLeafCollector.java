@@ -16,6 +16,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReporting
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.JobReportingRepository;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
+import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -62,15 +63,15 @@ public class AutoOldLeafCollector implements AccountItemSource {
     }
 
     @Override
-    public void collectChildren(SchedulerSession session, PrintWriter p, Job extractorJob) throws Exception {
+    public void collectChildren(SchedulerSession session, PrintWriter p, Job extractorJob, Logger log) throws Exception {
         scan(session, context.getJob(), p, extractorJob);
         p.println("AutoOldLeafCollector openItemsMs=" + openItemsMs);
         p.println("baseWorkingFound=" + baseWorkingFound + ", fb05Found=" + fb05Found);
 
-        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), jobType,stringToSet(userId),null);
+        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), jobType,stringToSet(userId),null,log);
 
-        p.println("JOB REPORTING RECORD");
-        p.println(record);
+        //p.println("JOB REPORTING RECORD");
+        //p.println(record);
 
         repository.save(session, record);
 

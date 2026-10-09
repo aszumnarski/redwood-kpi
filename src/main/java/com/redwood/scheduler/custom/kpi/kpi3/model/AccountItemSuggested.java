@@ -11,6 +11,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.factory.JobReporti
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReportingRecord;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.JobReportingRepository;
 import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
+import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -49,7 +50,7 @@ public class AccountItemSuggested implements AccountItemSource {
     }
 
     @Override
-    public void collectChildren(SchedulerSession session, PrintWriter p, Job job) throws Exception {
+    public void collectChildren(SchedulerSession session, PrintWriter p, Job job, Logger log) throws Exception {
 
         if (!"Waiting".equals(context.getStatus()) && !"Completed".equals(context.getStatus())) {
             return;
@@ -66,10 +67,10 @@ public class AccountItemSuggested implements AccountItemSource {
 
         p.println("========================================");
 
-        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), JobType.SUGGESTED,stringToSet(userId),null);
+        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), JobType.SUGGESTED,stringToSet(userId),null,log);
 
-        p.println("JOB REPORTING RECORD");
-        p.println(record);
+        //p.println("JOB REPORTING RECORD");
+        //p.println(record);
 
         repository.save(session, record);
     }

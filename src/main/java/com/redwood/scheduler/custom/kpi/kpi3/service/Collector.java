@@ -31,7 +31,10 @@ public class Collector
         jobsCollected++;
         JobDefinitionRegistry def = JobDefinitionRegistry.fromName(j.getJobDefinition().getMasterJobDefinition().getName());
         JobType type = def != null ? def.type : JobType.UNKNOWN;
-        if (type == JobType.UNKNOWN) { unknownJobs++; }
+        if (type == JobType.UNKNOWN) {
+            p.println("Unknown: " + j.getJobId() + ":" + j.getJobDefinition().getMasterJobDefinition().getName());
+            unknownJobs++;
+        }
         typeCounts.merge(type, 1, Integer::sum);
 
         String period = PeriodUtil.getPeriod(j.getRunStart());

@@ -14,6 +14,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReporting
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.JobReportingRepository;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXSchemas;
 import com.redwood.scheduler.custom.kpi.kpi3.rtx.RTXService;
+import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.PrintWriter;
 import java.util.*;
@@ -86,7 +87,7 @@ public class ConditionalClearingRequest {
 
     }
 
-    public void collectChildren(SchedulerSession session, PrintWriter p, Job job)
+    public void collectChildren(SchedulerSession session, PrintWriter p, Job job, Logger log)
             throws Exception {
         scan(session, context.getJob(), p, job);
         p.println(
@@ -115,10 +116,10 @@ public class ConditionalClearingRequest {
                                     " | avgMs=" + (totalMs / count));
                 });
 
-        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), JobType.CONDITIONAL, stringToSet(userId),linkId);
+        JobReportingRecord record = factory.create(session,context, stats, fileWriter.getAllocation(), JobType.CONDITIONAL, stringToSet(userId),linkId,log);
 
-        p.println("JOB REPORTING RECORD");
-        p.println(record);
+        //p.println("JOB REPORTING RECORD");
+        //p.println(record);
 
         repository.save(session, record);
     }

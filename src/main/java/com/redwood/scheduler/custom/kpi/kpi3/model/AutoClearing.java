@@ -9,6 +9,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.config.ExactMatchRule;
 import com.redwood.scheduler.custom.kpi.kpi3.config.ParentDifferentChildRule;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.ScanStats;
+import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.PrintWriter;
 import java.util.HashMap;
@@ -85,9 +86,9 @@ public class AutoClearing {
         this.scanStats = new ScanStats();
     }
 
-    public void collectActionItems(SchedulerSession session, PrintWriter p, Job extractorJob)
+    public void collectActionItems(SchedulerSession session, PrintWriter p, Job extractorJob,Logger log)
             throws Exception {
-        scan(session, job, p, extractorJob);
+        scan(session, job, p, extractorJob,log);
         p.println("AutoClearing stats: " + scanStats);
         p.println("SOURCE PERFORMANCE");
 
@@ -111,7 +112,7 @@ public class AutoClearing {
                 });
     }
 
-    private void scanOld(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob)
+    private void scanOld(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob,Logger log)
             throws Exception {
         for (Job child : parent.getChildJobs()) {
 
@@ -122,14 +123,14 @@ public class AutoClearing {
             if (rule != null)
             {
                 scanStats.incrementMatchedRules();
-                processRule(rule, child, session, p, extractorJob);
+                processRule(rule, child, session, p, extractorJob,log);
             }
 
-            scanOld(session, child, p, extractorJob);
+            scanOld(session, child, p, extractorJob,log);
         }
     }
 
-    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob)
+    private void scan(SchedulerSession session, Job parent, PrintWriter p, Job extractorJob,Logger log)
             throws Exception {
 
         for (Job child : parent.getChildJobs()) {
@@ -142,22 +143,22 @@ public class AutoClearing {
             if (rule != null)
             {
                 scanStats.incrementMatchedRules();
-                processRule(rule, child, session, p, extractorJob);
+                processRule(rule, child, session, p, extractorJob,log);
                 continue;
 
             }
 
-            scan(session, child, p, extractorJob);
+            scan(session, child, p, extractorJob,log);
         }
     }
 
-    private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job extractorJob) throws Exception
+    private void processRule(Rule rule, Job child, SchedulerSession session, PrintWriter p, Job extractorJob, Logger log) throws Exception
     {
 
         AccountItemSource source = rule.createSource(child,runStartDate);
         scanStats.incrementCreatedSources();
         long start = System.currentTimeMillis();
-        source.collectChildren(session, p, extractorJob);
+        source.collectChildren(session, p, extractorJob,log);
         long elapsed = System.currentTimeMillis() - start;
         String sourceName = source.getClass().getSimpleName();
         sourceTimes.merge(sourceName, elapsed, Long::sum);

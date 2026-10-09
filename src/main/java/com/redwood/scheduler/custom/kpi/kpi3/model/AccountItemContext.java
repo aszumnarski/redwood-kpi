@@ -16,6 +16,7 @@ public class AccountItemContext
     private final String name;
     private final String accountItem;
     private final String companyCode;
+    private final String jobDescription;
 
     public AccountItemContext(Job job, DateTimeZone parentDate)
             throws Exception
@@ -26,6 +27,7 @@ public class AccountItemContext
         this.id = job.getJobId();
         this.runStartDate = job.getRunStart();
         this.runEndDate = job.getRunEnd();
+        this.jobDescription = job.getDescription();
         this.status = job.getStatus().getTranslationEN();
         this.name = job.getJobDefinition().getMasterJobDefinition().getName();
         this.accountItem = JobParameterHelper.getAccountItems(job);
@@ -75,5 +77,9 @@ public class AccountItemContext
     public String getCompanyCode()
     {
         return companyCode;
+    }
+
+    public String getJobDescription() {
+        return jobDescription;
     }
 }
