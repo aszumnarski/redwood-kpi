@@ -9,7 +9,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.model.KPICounts;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.aggregation.ReportingAggregator;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.csv.ReportingCsvSerializer;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingRecord;
-import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
+import com.redwood.scheduler.custom.kpi.kpi3.repository.SuggestedClearingRepository;
 import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.BufferedReader;
@@ -137,7 +137,7 @@ public class HistoryReportingRepository {
                     //throw new Exception ("More than 1 certification found! " + certificationSet + " for key " + key);
                 }
                 String id = certificationSet.iterator().next();
-                KPICounts recon = ReconciliationRepository.getStatusTotalsForCert(session,Long.parseLong(id));
+                KPICounts recon = SuggestedClearingRepository.getStatusTotalsForCert(session,Long.parseLong(id));
                 row.setTotal(recon.getOpen());
                 row.setProposed(recon.getProposed());
                 row.setCleared(recon.getCleared());

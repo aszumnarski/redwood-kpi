@@ -1,16 +1,17 @@
 package com.redwood.scheduler.custom.kpi.kpi3.reporting.completeness;
 
-public class CompletenessDefinition {
+public class ReconciliationCategory {
 
     private final ReconKey reconKey;
     private final String sourceMasterTable;
 
-    public CompletenessDefinition(
+    public ReconciliationCategory(
             ReconKey reconKey,
             String sourceMasterTable) {
 
         this.reconKey = reconKey;
         this.sourceMasterTable = sourceMasterTable;
+
     }
 
     public ReconKey getReconKey() {

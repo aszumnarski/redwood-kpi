@@ -77,6 +77,7 @@ public class ReconConfiguration {
                 ", dueDate='" + dueDate + '\'' +
                 ", frequency='" + frequency + '\'' +
                 ", reconType='" + reconType + '\'' +
+                ", sourceMasterTable='" + sourceMasterTable + '\'' +
                 '}';
     }
 

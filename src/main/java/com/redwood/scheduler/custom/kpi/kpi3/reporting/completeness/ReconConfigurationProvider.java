@@ -20,11 +20,11 @@ public class ReconConfigurationProvider {
     }
 
     public Set<ReconConfiguration> loadReconConfigurations(SchedulerSession session, Logger log) throws SchedulerAPIPersistenceException {
-        Set<CompletenessDefinition> definitions = masterTableRepository.getDefinitions(session);
+        Set<ReconciliationCategory> definitions = masterTableRepository.getDefinitions(session);
 
         Set<ReconConfiguration> allConfigurations = new HashSet<>();
 
-        Set<String> tableNames = definitions.stream().map(CompletenessDefinition::getSourceMasterTable).collect(Collectors.toSet());
+        Set<String> tableNames = definitions.stream().map(ReconciliationCategory::getSourceMasterTable).collect(Collectors.toSet());
 
         for(String tableName : tableNames){
             allConfigurations.addAll(reconConfigurationRepository.loadConfigurations(session, tableName));
@@ -36,7 +36,7 @@ public class ReconConfigurationProvider {
 
         Set<String> missingKeys = new TreeSet<>();
 
-        for (CompletenessDefinition definition : definitions) {
+        for (ReconciliationCategory definition : definitions) {
 
             String key = getLookupKey(definition);
             if (!index.containsKey(key)) missingKeys.add(key);
@@ -78,6 +78,112 @@ public class ReconConfigurationProvider {
         return matched;
     }
 
+    public void printStatistics(
+            Set<ReconConfiguration> configurations,Logger log) {
+
+        printDistribution(
+                "Frequency",
+                configurations.stream()
+                        .collect(Collectors.groupingBy(
+                                c -> valueOrNull(c.getFrequency()),
+                                TreeMap::new,
+                                Collectors.counting())),log);
+
+        printDistribution(
+                "Account Category",
+                configurations.stream()
+                        .collect(Collectors.groupingBy(
+                                c -> valueOrNull(c.getAccountCategory()),
+                                TreeMap::new,
+                                Collectors.counting())),log);
+
+        printDistribution(
+                "Recon Type",
+                configurations.stream()
+                        .collect(Collectors.groupingBy(
+                                c -> ReconTypeNormalizer.normalize(
+                                        c.getReconType()),
+                                TreeMap::new,
+                                Collectors.counting())),log);
+
+        printDistribution(
+                "Due Date",
+                configurations.stream()
+                        .collect(Collectors.groupingBy(
+                                c -> valueOrNull(c.getDueDate()),
+                                TreeMap::new,
+                                Collectors.counting())),log);
+
+        printDistribution(
+                "Source Table",
+                configurations.stream()
+                        .collect(Collectors.groupingBy(
+                                c -> valueOrNull(c.getSourceMasterTable()),
+                                TreeMap::new,
+                                Collectors.counting())),log);
+
+        printDistribution(
+                "Company Code",
+                configurations.stream()
+                        .collect(Collectors.groupingBy(
+                                ReconConfiguration::getCompanyCode,
+                                TreeMap::new,
+                                Collectors.counting())),log);
+
+        printDistribution(
+                "Frequency + Due Date",
+                configurations.stream()
+                        .collect(Collectors.groupingBy(
+                                c -> c.getFrequency()
+                                        + " | "
+                                        + c.getDueDate(),
+                                TreeMap::new,
+                                Collectors.counting())),log);
+
+
+        log.info("Null frequency: "
+                + configurations.stream()
+                .filter(c -> c.getFrequency() == null)
+                .count());
+
+        log.info("Null dueDate: "
+                + configurations.stream()
+                .filter(c -> c.getDueDate() == null)
+                .count());
+
+        log.info("Null category: "
+                + configurations.stream()
+                .filter(c -> c.getAccountCategory() == null)
+                .count());
+
+        log.info("Null reconType: "
+                + configurations.stream()
+                .filter(c -> c.getReconType() == null)
+                .count());
+
+        configurations.stream()
+                .filter(c -> c.getDueDate() == null)
+                .limit(50)
+                .forEach(c -> log.info(c.toString()));
+
+
+    }
+
+    private String valueOrNull(String value) {
+        return value == null ? "<NULL>" : value;
+    }
+
+    private void printDistribution(
+            String title,
+            Map<String, Long> distribution,Logger log) {
+
+        log.info("");
+        log.info("==== " + title + " ====");
+
+        distribution.forEach((key, count) ->
+                log.info(key + " -> " + count));
+    }
+
     private Map<String, Set<ReconConfiguration>> buildIndex(
             Set<ReconConfiguration> configurations) {
 
@@ -88,7 +194,7 @@ public class ReconConfigurationProvider {
     }
 
     private String getLookupKey(
-            CompletenessDefinition definition) {
+            ReconciliationCategory definition) {
 
         ReconKey reconKey = definition.getReconKey();
         return reconKey.companyCode() + "|" + ReconTypeNormalizer.normalize(reconKey.type());

@@ -8,7 +8,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.job.JobParameterHelper;
 import com.redwood.scheduler.custom.kpi.kpi3.model.KPICounts;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.csv.ReportingCsvSerializer;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingRecord;
-import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
+import com.redwood.scheduler.custom.kpi.kpi3.repository.SuggestedClearingRepository;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -136,7 +136,7 @@ public class VolumeAggregator
                     //throw new Exception ("More than 1 certification found! " + certificationSet + " for key " + key);
                 }
                 String id = certificationSet.iterator().next();
-                KPICounts recon = ReconciliationRepository.getStatusTotalsForCert(session,Long.parseLong(id));
+                KPICounts recon = SuggestedClearingRepository.getStatusTotalsForCert(session,Long.parseLong(id));
                 row.setTotal(recon.getOpen());
                 row.setProposed(recon.getProposed());
                 row.setCleared(recon.getCleared());

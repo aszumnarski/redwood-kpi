@@ -32,7 +32,7 @@ public class SummaryAggregator {
 
         DateTimeZone runStart = collectorJob.getJobParameterByName("IN_DATE_FROM").getInValueDate();
         String period = PeriodUtil.getPeriod(runStart);
-        List<JobReportingRecord> records = new JobReportingRepository().findByPeriod(session, period);
+        Set<JobReportingRecord> records = new JobReportingRepository().findByPeriod(session, period);
 
         Map<ReportingKey, AggregationRecord> aggregatedData = new HashMap<>();
 

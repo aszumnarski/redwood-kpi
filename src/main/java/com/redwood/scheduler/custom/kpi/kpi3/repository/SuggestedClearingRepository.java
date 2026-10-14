@@ -9,7 +9,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.model.KPICounts;
 
 import java.sql.ResultSet;
 
-public class ReconciliationRepository
+public class SuggestedClearingRepository
 {
     public static KPICounts getStatusTotalsForCert(SchedulerSession session, long certId)
     {

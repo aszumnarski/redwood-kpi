@@ -10,7 +10,7 @@ import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.factory.JobReportingRecordFactory;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReportingRecord;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.JobReportingRepository;
-import com.redwood.scheduler.custom.kpi.kpi3.repository.ReconciliationRepository;
+import com.redwood.scheduler.custom.kpi.kpi3.repository.SuggestedClearingRepository;
 import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.io.PrintWriter;
@@ -131,7 +131,7 @@ public class AccountItemSuggested implements AccountItemSource {
         certificationCount++;
         certificationMs += System.currentTimeMillis() - start;
 
-        KPICounts counts = ReconciliationRepository.getStatusTotalsForCert(session,Long.parseLong(certificationId));
+        KPICounts counts = SuggestedClearingRepository.getStatusTotalsForCert(session,Long.parseLong(certificationId));
 
         stats.setCounts(counts);
 

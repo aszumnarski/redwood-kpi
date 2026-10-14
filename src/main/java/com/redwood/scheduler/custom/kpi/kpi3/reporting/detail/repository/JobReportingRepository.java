@@ -107,7 +107,7 @@ public class JobReportingRepository {
         return "KPI3_JOB_REPORTING_" + period.replace("FY", "").replace("P", "_");
     }
 
-    public List<JobReportingRecord> findByPeriod(SchedulerSession session, String period) throws ParseException {
+    public Set<JobReportingRecord> findByPeriod(SchedulerSession session, String period) throws ParseException {
         String tableName = getCurrentPeriodTableName(period);
         Iterator<TableValue> it = session.executeObjectQuery(TableValue.TYPE,"select tv.* from TableValue tv join Table t on tv.Table = t.UniqueId and t.Name = ?", tableName);
         Map<String,List<TableValue>> values = new HashMap<>();
@@ -115,7 +115,7 @@ public class JobReportingRepository {
             TableValue tv = it.next();
             values.computeIfAbsent(tv.getKey(), key -> new ArrayList<>()).add(tv);
         }
-        List<JobReportingRecord> result = new ArrayList<>();
+        Set<JobReportingRecord> result = new HashSet<>();
         for(List<TableValue> tableValues : values.values()){
 
             JobReportingRecord record = JobReportingMapper.toRecord(tableValues.iterator());

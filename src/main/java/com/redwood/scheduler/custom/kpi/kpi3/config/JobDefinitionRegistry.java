@@ -3,41 +3,45 @@ package com.redwood.scheduler.custom.kpi.kpi3.config;
 public enum JobDefinitionRegistry
 {
     CONDITIONAL_REVIEW(
-            "CUS_FCA_TD_BSC_AccountItemLoop_CONDITIONAL_AUTOCLEAR_REVIEW", //OIM
+            "CUS_FCA_TD_BSC_AccountItemLoop_CONDITIONAL_AUTOCLEAR_REVIEW", //OIM - not in use
             JobType.CONDITIONAL, HandlerType.CONDITIONAL_REVIEW),
     CONDITIONAL_REVIEW_WEA(
-            "CUS_FCA_TD_BSC_AccountItemLoop_CONDITIONAL_AUTOCLEAR_REVIEW_WEA", //OIM
+            "CUS_FCA_TD_BSC_AccountItemLoop_CONDITIONAL_AUTOCLEAR_REVIEW_WEA", //OIM - ok
             JobType.CONDITIONAL, HandlerType.CONDITIONAL_REVIEW),
     CONDITIONAL_REQUEST(
             "CUS_SPD_BSC_CONDITIONAL_AUTOCLEAR_REQUEST",
             JobType.CONDITIONAL, HandlerType.CONDITIONAL_REQUEST),
+
+
     AUTOCLEAR_WEA(
-            "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_WEA", //OIM
+            "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_WEA", //OIM - ok
             JobType.AUTO, HandlerType.AUTO),
     AUTOCLEAR_SHERPAX_LDGRP(
-            "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_SHERPAX_LDGRP", //OIM
+            "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_SHERPAX_LDGRP", //OIM - held for now
             JobType.AUTO, HandlerType.AUTO),
     AUTOCLEAR_WEA_backupBSIS(
-            "CUS_TD_BSC_AUTOCLEAR_WEA_backupBSIS", //GL
+            "CUS_TD_BSC_AUTOCLEAR_WEA_backupBSIS", //GL - not in use
             JobType.AUTO, HandlerType.AUTO),
     AUTOCLEAR_SHERPAX_new(
-            "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_SHERPAX_new", //OIM
+            "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_SHERPAX_new", //OIM - not in use
             JobType.AUTO, HandlerType.AUTO),
     AUTOCLEAR_CB_IN_byAccountItem(
             "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_CB_IN_byAccountItem", //OIM
             JobType.AUTO, HandlerType.AUTO),
     AUTOCLEAR_CB_IN_bySchedule(
-            "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_CB_IN_bySchedule", //BANK  and GL_GL
+            "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_CB_IN_bySchedule", //BANK  and GL_GL - ok
             JobType.AUTO, HandlerType.AUTO),
     AutoClear_AccountItemLoop_SHERPAX_CASH(
-            "CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH", //BANK
+            "CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH", //BANK - held for now
             JobType.AUTO, HandlerType.AUTO),
     AutoClear_AccountItemLoop_SHERPAX_CASH_SOFOM(
-            "CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH_SOFOM", //SFSBANK
+            "CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH_SOFOM", //SFSBANK - not schedule - triggered manually
             JobType.AUTO, HandlerType.AUTO),
     AutoClear_AccountItemLoop_SHERPAX_CASH_US(
-            "CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH_US", //SFSBANK
+            "CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH_US", //SFSBANK - ok
             JobType.AUTO, HandlerType.AUTO),
+
+
     OneSided_GRIR_SHERPAX(
             "CUS_FCA_TD_BSC_AccountItemLoop_OneSided_GRIR_SHERPAX",
             JobType.RECON, HandlerType.RECON),
@@ -77,8 +81,10 @@ public enum JobDefinitionRegistry
     SuggestedClearing_SHERPAX(
             "CUS_FCA_TD_BSC_AccountItemLoop_SuggestedClearing_SHERPAX", //OIMGL
             JobType.RECON, HandlerType.RECON),
+
+
     SuggestedClearing_OneSided_WEA(
-            "CUS_FCA_TD_BSC_AccountItemLoop_SuggestedClearing_OneSided_WEA", //OIM
+            "CUS_FCA_TD_BSC_AccountItemLoop_SuggestedClearing_OneSided_WEA", //OIM - ok
             JobType.SUGGESTED, HandlerType.SUGGESTED);
 
     public final String name;
