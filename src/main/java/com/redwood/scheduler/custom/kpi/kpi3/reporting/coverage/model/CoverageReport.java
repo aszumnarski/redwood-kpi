@@ -2,7 +2,6 @@ package com.redwood.scheduler.custom.kpi.kpi3.reporting.coverage.model;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 

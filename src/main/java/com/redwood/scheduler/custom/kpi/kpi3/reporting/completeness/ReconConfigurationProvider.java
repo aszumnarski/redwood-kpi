@@ -1,8 +1,6 @@
 package com.redwood.scheduler.custom.kpi.kpi3.reporting.completeness;
 
-import com.redwood.scheduler.api.exception.SchedulerAPIPersistenceException;
 import com.redwood.scheduler.api.model.SchedulerSession;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.MasterTableRepository;
 import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.util.*;
@@ -10,21 +8,20 @@ import java.util.stream.Collectors;
 
 public class ReconConfigurationProvider {
 
-    private final MasterTableRepository masterTableRepository;
+    private final MasterTableDefinitionRepository masterTableDefinitionRepository;
     private final ReconConfigurationRepository reconConfigurationRepository;
 
-    public ReconConfigurationProvider(MasterTableRepository masterTableRepository, ReconConfigurationRepository reconConfigurationRepository) {
+    public ReconConfigurationProvider(MasterTableDefinitionRepository masterTableDefinitionRepository, ReconConfigurationRepository reconConfigurationRepository) {
 
-        this.masterTableRepository = masterTableRepository;
+        this.masterTableDefinitionRepository = masterTableDefinitionRepository;
         this.reconConfigurationRepository = reconConfigurationRepository;
     }
 
-    public Set<ReconConfiguration> loadReconConfigurations(SchedulerSession session, Logger log) throws SchedulerAPIPersistenceException {
-        Set<ReconciliationCategory> definitions = masterTableRepository.getDefinitions(session);
+    public Set<ReconConfiguration> loadReconConfigurations(SchedulerSession session, Logger log) {
 
+        Set<MasterTableDefinition> definitions = masterTableDefinitionRepository.loadConfigurations(session);
         Set<ReconConfiguration> allConfigurations = new HashSet<>();
-
-        Set<String> tableNames = definitions.stream().map(ReconciliationCategory::getSourceMasterTable).collect(Collectors.toSet());
+        Set<String> tableNames = definitions.stream().map(MasterTableDefinition::getOneSidedMasterTableName).collect(Collectors.toSet());
 
         for(String tableName : tableNames){
             allConfigurations.addAll(reconConfigurationRepository.loadConfigurations(session, tableName));
@@ -36,7 +33,7 @@ public class ReconConfigurationProvider {
 
         Set<String> missingKeys = new TreeSet<>();
 
-        for (ReconciliationCategory definition : definitions) {
+        for (MasterTableDefinition definition : definitions) {
 
             String key = getLookupKey(definition);
             if (!index.containsKey(key)) missingKeys.add(key);
@@ -194,7 +191,7 @@ public class ReconConfigurationProvider {
     }
 
     private String getLookupKey(
-            ReconciliationCategory definition) {
+            MasterTableDefinition definition) {
 
         ReconKey reconKey = definition.getReconKey();
         return reconKey.companyCode() + "|" + ReconTypeNormalizer.normalize(reconKey.type());

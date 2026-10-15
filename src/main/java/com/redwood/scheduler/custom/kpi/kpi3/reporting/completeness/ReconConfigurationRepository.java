@@ -3,7 +3,7 @@ package com.redwood.scheduler.custom.kpi.kpi3.reporting.completeness;
 import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.model.Table;
 import com.redwood.scheduler.api.model.TableValue;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.MasterTableRepository;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.TableRepository;
 
 import java.util.*;
 
@@ -15,7 +15,7 @@ public class ReconConfigurationRepository {
             SchedulerSession session,
             String tableName) {
 
-        Table table = MasterTableRepository.getTableByName(session, tableName);
+        Table table = TableRepository.getTableByName(session, tableName);
 
         if (table == null) {
             return Collections.emptySet();

@@ -24,7 +24,7 @@ public class JobReportingRepository {
     private void insertRow(SchedulerSession session, JobReportingRecord record) throws SchedulerAPIPersistenceException {
         String period = record.getPeriod();
         String tableName = getCurrentPeriodTableName(period);
-        Table repository = getTableByName(session, tableName);
+        Table repository = TableRepository.getTableByName(session, tableName);
         if (repository == null) repository = createPeriodRepository(session, tableName, period);
         JobReportingMapper.toTableValues(repository, record);
 
@@ -87,17 +87,12 @@ public class JobReportingRepository {
 
     private JobReportingRecord findByJobId(SchedulerSession session, JobReportingRecord record) throws ParseException {
         String tableName = getCurrentPeriodTableName(record.getPeriod());
-        Table repository = getTableByName(session, tableName);
+        Table repository = TableRepository.getTableByName(session, tableName);
         if (repository == null) return null;
 
         Iterator<TableValue> rowValues = repository.getTableRowByKey(String.valueOf(record.getJobId()));
         return JobReportingMapper.toRecord(rowValues);
 
-    }
-
-    private Table getTableByName(SchedulerSession session, String tableName) {
-        Iterator<Table> it = session.executeObjectQuery(Table.TYPE, "select * from Table where Name = ?", tableName);
-        return it.hasNext() ? it.next() : null;
     }
 
     private String getCurrentPeriodTableName(String period) {

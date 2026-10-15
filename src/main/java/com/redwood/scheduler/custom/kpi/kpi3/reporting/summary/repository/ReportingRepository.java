@@ -2,6 +2,7 @@ package com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.repository;
 
 import com.redwood.scheduler.api.exception.SchedulerAPIPersistenceException;
 import com.redwood.scheduler.api.model.*;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.TableRepository;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingKey;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingRecord;
 
@@ -25,7 +26,7 @@ public class ReportingRepository {
     private void insertRow(SchedulerSession session, ReportingRecord record) throws SchedulerAPIPersistenceException {
         String period = record.getPeriod();
         String tableName = getCurrentPeriodTableName(period);
-        Table repository = getTableByName(session, tableName);
+        Table repository = TableRepository.getTableByName(session, tableName);
         if (repository == null) repository = createPeriodRepository(session, tableName, period);
         ReportingMapper.toTableValues(repository, record);
 
@@ -89,17 +90,12 @@ public class ReportingRepository {
     private ReportingRecord findByKey(SchedulerSession session, ReportingKey key) {
         String period = key.getPeriod();
         String tableName = getCurrentPeriodTableName(period);
-        Table repository = getTableByName(session, tableName);
+        Table repository = TableRepository.getTableByName(session, tableName);
         if (repository == null) return null;
 
         Iterator<TableValue> rowValues = repository.getTableRowByKey(key.toString());
         return ReportingMapper.toRecord(rowValues);
 
-    }
-
-    private Table getTableByName(SchedulerSession session, String tableName) {
-        Iterator<Table> it = session.executeObjectQuery(Table.TYPE, "select * from Table where Name = ?", tableName);
-        return it.hasNext() ? it.next() : null;
     }
 
     private String getCurrentPeriodTableName(String period) {

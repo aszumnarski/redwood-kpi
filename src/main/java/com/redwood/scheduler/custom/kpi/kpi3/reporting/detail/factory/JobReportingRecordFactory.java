@@ -7,13 +7,9 @@ import com.redwood.scheduler.custom.kpi.kpi3.date.PeriodUtil;
 import com.redwood.scheduler.custom.kpi.kpi3.file.FileAllocation;
 import com.redwood.scheduler.custom.kpi.kpi3.model.AccountItemContext;
 import com.redwood.scheduler.custom.kpi.kpi3.monitoring.CollectorStats;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.completeness.ReconConfiguration;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.completeness.ReconConfigurationProvider;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.completeness.ReconConfigurationRepository;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.completeness.ReconTypeNormalizer;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.completeness.*;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.analyzer.ErrorAnalyzer;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.model.JobReportingRecord;
-import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.MasterTableRepository;
 import com.redwood.scheduler.infrastructure.logging.api.Logger;
 
 import java.util.*;
@@ -104,10 +100,10 @@ public class JobReportingRecordFactory
             SchedulerSession session, Logger log)
             throws SchedulerAPIPersistenceException {
 
-        MasterTableRepository masterTableRepository = new MasterTableRepository();
+        MasterTableDefinitionRepository masterTableDefinitionRepository = new MasterTableDefinitionRepository();
         ReconConfigurationRepository reconConfigurationRepository = new ReconConfigurationRepository();
 
-        ReconConfigurationProvider provider = new ReconConfigurationProvider(masterTableRepository, reconConfigurationRepository);
+        ReconConfigurationProvider provider = new ReconConfigurationProvider(masterTableDefinitionRepository, reconConfigurationRepository);
 
         Set<ReconConfiguration> configurations = provider.loadReconConfigurations(session,log);
 
@@ -116,7 +112,6 @@ public class JobReportingRecordFactory
         for (ReconConfiguration configuration : configurations) {
 
             String key = configuration.getCompanyCode() + ":" + configuration.getAccountItem();
-
             index.computeIfAbsent(key, k -> new HashSet<>()).add(ReconTypeNormalizer.normalize(configuration.getAccountCategory()));
         }
 
