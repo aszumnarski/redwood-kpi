@@ -21,7 +21,7 @@ public class ReconConfigurationProvider {
 
         Set<MasterTableDefinition> definitions = masterTableDefinitionRepository.loadConfigurations(session);
         Set<ReconConfiguration> allConfigurations = new HashSet<>();
-        Set<String> tableNames = definitions.stream().map(MasterTableDefinition::getOneSidedMasterTableName).collect(Collectors.toSet());
+        Set<String> tableNames = definitions.stream().map(MasterTableDefinition::getOneSidedMasterTableName).filter(Objects::nonNull).collect(Collectors.toSet());
 
         for(String tableName : tableNames){
             allConfigurations.addAll(reconConfigurationRepository.loadConfigurations(session, tableName));
@@ -72,11 +72,11 @@ public class ReconConfigurationProvider {
         log.debug("====================================================================");
         log.debug(typesByAccountItem.toString());
         log.debug("====================================================================");
+
         return matched;
     }
 
-    public void printStatistics(
-            Set<ReconConfiguration> configurations,Logger log) {
+    public void printStatistics(Set<ReconConfiguration> configurations,Logger log) {
 
         printDistribution(
                 "Frequency",

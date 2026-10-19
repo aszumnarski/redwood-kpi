@@ -41,20 +41,24 @@ public class CoverageKey {
         return companyCode + ":" + accountItem;
     }
 
-    public static CoverageKey from(
-            ReconConfiguration config) {
+    public static CoverageKey from(ReconConfiguration config) {
 
         return new CoverageKey(
                 config.getCompanyCode(),
                 config.getAccountItem());
     }
 
-    public static CoverageKey from(
-            JobReportingRecord record) {
+    public static CoverageKey from(JobReportingRecord record) {
 
         return new CoverageKey(
                 record.getCompanyCode(),
                 record.getAccountItem());
+    }
+
+    public static CoverageKey from(ScheduledCoverageEntry entry) {
+        return new CoverageKey(
+                entry.key().getCompanyCode(),
+                entry.key().getAccountItem());
     }
 
     @Override

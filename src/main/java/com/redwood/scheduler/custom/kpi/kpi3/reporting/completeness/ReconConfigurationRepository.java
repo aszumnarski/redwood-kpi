@@ -15,6 +15,10 @@ public class ReconConfigurationRepository {
             SchedulerSession session,
             String tableName) {
 
+        if (tableName == null || tableName.isBlank()) {
+            return Collections.emptySet();
+        }
+
         Table table = TableRepository.getTableByName(session, tableName);
 
         if (table == null) {

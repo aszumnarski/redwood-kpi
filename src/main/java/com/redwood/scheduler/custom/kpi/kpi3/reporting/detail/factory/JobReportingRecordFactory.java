@@ -17,7 +17,6 @@ import java.util.*;
 
 public class JobReportingRecordFactory
 {
-    private final Map<String, String> accountTypeCache = new HashMap<>();
     private final ErrorAnalyzer errorAnalyzer = new ErrorAnalyzer();
 
     private static Map<String, Set<String>> accountTypeIndex;
@@ -30,7 +29,7 @@ public class JobReportingRecordFactory
             JobType jobType,
             Set<String> userIds,
             Long linkId,
-            Logger log) throws SchedulerAPIPersistenceException {
+            Logger log) {
 
         JobReportingRecord record = new JobReportingRecord();
 
@@ -63,14 +62,10 @@ public class JobReportingRecordFactory
         try {
 
             if (accountTypeIndex == null) {
+
                 accountTypeIndex = buildAccountTypeIndex(session, log);
-
-                long duplicates = accountTypeIndex.entrySet().stream()
-                        .filter(e -> e.getValue().size() > 1)
-                        .count();
-
+                long duplicates = accountTypeIndex.entrySet().stream().filter(e -> e.getValue().size() > 1).count();
                 log.info("AccountType duplicate keys: " + duplicates);
-
 
             }
 
@@ -88,16 +83,11 @@ public class JobReportingRecordFactory
 
         } catch (SchedulerAPIPersistenceException e) {
 
-            throw new RuntimeException(
-                    "Cannot determine account type for "
-                            + companyCode + ":"
-                            + accountItem,
-                    e);
+            throw new RuntimeException("Cannot determine account type for " + companyCode + ":" + accountItem, e);
         }
     }
 
-    private static Map<String, Set<String>> buildAccountTypeIndex(
-            SchedulerSession session, Logger log)
+    private static Map<String, Set<String>> buildAccountTypeIndex(SchedulerSession session, Logger log)
             throws SchedulerAPIPersistenceException {
 
         MasterTableDefinitionRepository masterTableDefinitionRepository = new MasterTableDefinitionRepository();
