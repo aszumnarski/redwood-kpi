@@ -109,7 +109,7 @@ public class ScheduledCoverageRepository {
         log.info("Scheduled coverage calculation started");
 
 
-        Map<ReconKey, MasterTableDefinition> definitions = indexByReconKey(new MasterTableDefinitionRepository().loadConfigurations(session));
+        Map<ReconKey, MasterTableDefinition> definitions = indexByReconKey(new MasterTableDefinitionRepository().loadClearingConfigurations(session));
 
         log.info("Loaded  " + definitions.size() + " master table definitions");
 
@@ -141,7 +141,11 @@ public class ScheduledCoverageRepository {
 
                     entries.addAll(createCoverageEntries(topLevelJob, findCoveredKeysIndia(session, topLevelJob, definition,log),log));
                 }
-                case "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_WEA" -> {
+                case "CUS_FCA_TD_BSC_AutoClear_AccountItemLoop_SHERPAX_CASH" -> {
+
+                    entries.addAll(createCoverageEntries(topLevelJob, findCoveredKeysSHERPAXCash(session, topLevelJob, definition,log),log));
+                }
+                case "CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_WEA","CUS_FCA_TD_BSC_AccountItemLoop_AUTOCLEAR_SHERPAX_LDGRP" -> {
                     entries.addAll(createCoverageEntries(topLevelJob, findCoveredKeysFromClearingTable(session,topLevelJob, reconKey.companyCode(), reconKey.type(), definition.getOneSidedMasterTableName(),definition.getClearingRuleMasterTableAutoName(),log),log));
 
                 }
@@ -162,6 +166,10 @@ public class ScheduledCoverageRepository {
 
         log.info("Generated " + entries.size() + " scheduled coverage entries");
         return entries;
+    }
+
+    private boolean isClearingKey(String reconType) {
+        return "OIM".equals(reconType) || "SFSBANK".equals(reconType);
     }
 
     private Set<CoverageKey> findCoveredKeysCash(SchedulerSession session, MasterTableDefinition definition,Logger log) {
@@ -261,6 +269,7 @@ public class ScheduledCoverageRepository {
     private ReconKey buildReconKey(Job topLevelJob) {
         String companyCode = JobParameterHelper.getParameter(topLevelJob, "BUKRS");
         String reconType = JobParameterHelper.getParameter(topLevelJob, "RECON_TYPE");
+        if(reconType == null) reconType = JobParameterHelper.getParameter(topLevelJob, "RECON_TYPE_SFS");
         String sapSystems = JobParameterHelper.getParameter(topLevelJob, "SAP_SYSTEMS");
         String client = JobParameterHelper.getParameter(topLevelJob, "CLIENT");
         return new ReconKey(sapSystems, client, companyCode, normalize(reconType));
@@ -335,6 +344,50 @@ public class ScheduledCoverageRepository {
         }
 
         log.info("After filtering company=" + definitionCompanyCode + ", type=" + definition.getReconKey().type() + ", schedule=" + schedule + " -> " + result.size() + " configurations");
+
+        return result;
+    }
+
+    private Set<CoverageKey> findCoveredKeysSHERPAXCash(SchedulerSession session, Job topLevelJob, MasterTableDefinition definition,Logger log) {
+
+        String definitionCompanyCode = definition.getReconKey().companyCode();
+        Set<CoverageKey> result = new HashSet<>();
+
+
+        Map<String, Set<TableValue>> rowsByKey = getRowsByKey(session, definition.getClearingRuleMasterTableName(),log);
+
+
+        log.info("Loaded " + rowsByKey.size() + " configurations from " + definition.getClearingRuleMasterTableName());
+        for (Set<TableValue> values : rowsByKey.values()) {
+
+            String companyCode = null;
+            String accountItem = null;
+            String notes = null;
+
+            for (TableValue value : values) {
+
+                String columnName = value.getColumnName();
+
+                switch (columnName) {
+                    case "BUKRS" -> companyCode = value.getColumnValue();
+                    case "Account_Item" -> accountItem = value.getColumnValue();
+                    case "Notes" -> notes = value.getColumnValue();
+                }
+
+            }
+
+            if (companyCode == null || accountItem == null) continue;
+
+            if (!definitionCompanyCode.equals(companyCode)) continue;
+
+
+            CoverageKey key = new CoverageKey(definitionCompanyCode, accountItem);
+
+            result.add(key);
+
+        }
+
+        log.info("After filtering company=" + definitionCompanyCode + ", type=" + definition.getReconKey().type() + " -> " + result.size() + " configurations");
 
         return result;
     }

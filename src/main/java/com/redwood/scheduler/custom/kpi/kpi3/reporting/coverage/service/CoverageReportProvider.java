@@ -17,7 +17,7 @@ import java.util.Set;
 
 public class CoverageReportProvider {
 
-    public CoverageReport getCoverageReport(SchedulerSession session, Logger log, String period) throws ParseException {
+    public CoverageReport getCoverageReport(SchedulerSession session, String period, Logger log) throws ParseException {
 
         MasterTableDefinitionRepository masterTableDefinitionRepository = new MasterTableDefinitionRepository();
         ReconConfigurationRepository reconConfigurationRepository = new ReconConfigurationRepository();

@@ -6,6 +6,7 @@ import com.redwood.scheduler.api.model.TableValue;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.TableRepository;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class MasterTableDefinitionRepository {
 
@@ -33,6 +34,15 @@ public class MasterTableDefinitionRepository {
 
         return result;
 
+    }
+
+    public Set<MasterTableDefinition> loadClearingConfigurations(
+            SchedulerSession session) {
+
+        return loadConfigurations(session)
+                .stream()
+                .filter(d -> "OIM".equals(d.getReconKey().type()) || "SFSBANK".equals(d.getReconKey().type()))
+                .collect(Collectors.toSet());
     }
 
     private Map<String, Set<TableValue>> groupRowsByKey(Table table) {

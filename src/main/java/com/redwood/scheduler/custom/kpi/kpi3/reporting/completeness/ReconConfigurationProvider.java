@@ -19,7 +19,7 @@ public class ReconConfigurationProvider {
 
     public Set<ReconConfiguration> loadReconConfigurations(SchedulerSession session, Logger log) {
 
-        Set<MasterTableDefinition> definitions = masterTableDefinitionRepository.loadConfigurations(session);
+        Set<MasterTableDefinition> definitions = masterTableDefinitionRepository.loadClearingConfigurations(session);
         Set<ReconConfiguration> allConfigurations = new HashSet<>();
         Set<String> tableNames = definitions.stream().map(MasterTableDefinition::getOneSidedMasterTableName).filter(Objects::nonNull).collect(Collectors.toSet());
 
