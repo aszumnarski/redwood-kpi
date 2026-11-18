@@ -47,8 +47,10 @@ public class CoverageBuilderService {
             status.setFrequency(config.getFrequency());
             status.setCategory(config.getAccountCategory());
             status.setReconType(config.getReconType());
+
         }
     }
+
 
     private void loadExecutions(
             Set<JobReportingRecord> records,
@@ -58,7 +60,7 @@ public class CoverageBuilderService {
 
             CoverageKey key = CoverageKey.from(record);
             CoverageStatus status = report.getOrCreate(key);
-
+            status.setClearingType(record.getClearingType());
             status.incrementExecutionCount();
         }
     }

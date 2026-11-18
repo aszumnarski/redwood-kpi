@@ -1,5 +1,7 @@
 package com.redwood.scheduler.custom.kpi.kpi3.reporting.dashboard.model;
 
+import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
+
 public class CoverageViewRowDto {
 
     private String companyCode;
@@ -8,7 +10,7 @@ public class CoverageViewRowDto {
 
     private String category;
 
-    private String accountType;
+    private JobType clearingType = JobType.UNKNOWN;
 
     private String frequency;
 
@@ -43,14 +45,6 @@ public class CoverageViewRowDto {
 
     public void setCategory(String category) {
         this.category = category;
-    }
-
-    public String getAccountType() {
-        return accountType;
-    }
-
-    public void setAccountType(String accountType) {
-        this.accountType = accountType;
     }
 
     public String getFrequency() {
@@ -91,11 +85,18 @@ public class CoverageViewRowDto {
                 "companyCode='" + companyCode + '\'' +
                 ", accountItem='" + accountItem + '\'' +
                 ", category='" + category + '\'' +
-                ", accountType='" + accountType + '\'' +
                 ", frequency='" + frequency + '\'' +
                 ", reconType='" + reconType + '\'' +
                 ", coverageStatus='" + coverageStatus + '\'' +
                 ", executionCount=" + executionCount +
                 '}';
+    }
+
+    public JobType getClearingType() {
+        return clearingType;
+    }
+
+    public void setClearingType(JobType clearingType) {
+        this.clearingType = clearingType;
     }
 }

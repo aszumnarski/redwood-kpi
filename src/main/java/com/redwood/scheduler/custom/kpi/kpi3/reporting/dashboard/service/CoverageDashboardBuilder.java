@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class DashboardMapper {
+public class CoverageDashboardBuilder {
 
 
     public CoverageDashboardDto map(CoverageReport report) {
@@ -57,9 +57,10 @@ public class DashboardMapper {
 
         CoverageViewRowDto dto = new CoverageViewRowDto();
 
-        dto.setCompanyCode(status.getCompanyCode());
-        dto.setAccountItem(status.getAccountItem());
+        dto.setCompanyCode(status.getCompanyCode() != null ? status.getCompanyCode() : status.getKey().getCompanyCode());
+        dto.setAccountItem(status.getAccountItem() != null ? status.getAccountItem() : status.getKey().getAccountItem());
         dto.setCategory(status.getCategory());
+        dto.setClearingType(status.getClearingType());
         dto.setFrequency(status.getFrequency());
         dto.setReconType(status.getReconType());
         dto.setExecutionCount(status.getExecutionCount());

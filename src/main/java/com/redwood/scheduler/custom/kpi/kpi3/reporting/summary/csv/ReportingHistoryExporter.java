@@ -3,7 +3,6 @@ package com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.csv;
 import com.redwood.scheduler.api.exception.ParameterDefaultValueUnavailableException;
 import com.redwood.scheduler.api.exception.SchedulerAPIPersistenceException;
 import com.redwood.scheduler.api.model.*;
-import com.redwood.scheduler.api.model.enumeration.JobStatus;
 import com.redwood.scheduler.custom.kpi.kpi3.file.ResultFileWriter;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingRecord;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.repository.ReportingRepository;
@@ -24,6 +23,10 @@ public class ReportingHistoryExporter
         for(JobFile file : files){
             exportJobFile(session,file,log);
         }
+    }
+
+    public void executeNoExport(SchedulerSession session, Job collectorJob, Logger log) throws Exception {
+        exportAllPeriods(session,collectorJob,log);
     }
 
     private void exportJobFile(SchedulerSession session, JobFile file,Logger log) throws ParameterDefaultValueUnavailableException, SchedulerAPIPersistenceException {

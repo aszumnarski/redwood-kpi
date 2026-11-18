@@ -12,8 +12,7 @@ public class CoverageDashboardDto {
         return summary;
     }
 
-    public void setSummary(
-            DashboardSummaryDto summary) {
+    public void setSummary(DashboardSummaryDto summary) {
         this.summary = summary;
     }
 
@@ -21,8 +20,7 @@ public class CoverageDashboardDto {
         return coverageRows;
     }
 
-    public void setCoverageRows(
-            List<CoverageViewRowDto> coverageRows) {
+    public void setCoverageRows(List<CoverageViewRowDto> coverageRows) {
         this.coverageRows = coverageRows;
     }
 }

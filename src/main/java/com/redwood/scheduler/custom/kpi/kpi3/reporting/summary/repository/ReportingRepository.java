@@ -6,8 +6,8 @@ import com.redwood.scheduler.custom.kpi.kpi3.reporting.detail.repository.TableRe
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingKey;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.summary.model.ReportingRecord;
 
-import java.text.ParseException;
 import java.util.*;
+
 
 public class ReportingRepository {
 
@@ -105,7 +105,7 @@ public class ReportingRepository {
         return "KPI3_SUMMARY_REPORTING_" + period.replace("FY", "").replace("P", "_");
     }
 
-    public List<ReportingRecord> findByPeriod(SchedulerSession session, String period) throws ParseException {
+    public List<ReportingRecord> findByPeriod(SchedulerSession session, String period) {
         String tableName = getCurrentPeriodTableName(period);
         return findByTableName(session,tableName);
     }

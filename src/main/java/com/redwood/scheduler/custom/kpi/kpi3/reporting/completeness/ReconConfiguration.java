@@ -94,5 +94,4 @@ public class ReconConfiguration {
         return companyCode + "|" + ReconTypeNormalizer.normalize(reconType);
     }
 
-
 }

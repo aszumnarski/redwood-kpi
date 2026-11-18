@@ -43,12 +43,9 @@ public class CoverageReport {
         return statuses.get(key);
     }
 
-    public CoverageStatus getOrCreate(
-            CoverageKey key) {
+    public CoverageStatus getOrCreate(CoverageKey key) {
 
-        return statuses.computeIfAbsent(
-                key,
-                CoverageStatus::new);
+        return statuses.computeIfAbsent(key, CoverageStatus::new);
     }
 
     public int size() {

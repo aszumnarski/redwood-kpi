@@ -77,4 +77,34 @@ public class ReportingRecord {
     public void setKPICounts(KPICounts counts) {
         this.counts = counts;
     }
+
+    public double getMatchingRate()
+    {
+        if(counts.getOpen() == 0)
+        {
+            return 0;
+        }
+
+        return counts.getProposed() * 100.0 / counts.getOpen();
+    }
+
+    public double getMatchedClearRate()
+    {
+        if(counts.getProposed() == 0)
+        {
+            return 0;
+        }
+
+        return counts.getCleared() * 100.0 / counts.getProposed();
+    }
+
+    public double getClearingRate()
+    {
+        if(counts.getOpen() == 0)
+        {
+            return 0;
+        }
+
+        return counts.getCleared() * 100.0 / counts.getOpen();
+    }
 }

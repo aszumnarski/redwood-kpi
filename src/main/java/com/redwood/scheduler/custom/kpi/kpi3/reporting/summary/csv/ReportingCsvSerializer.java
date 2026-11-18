@@ -8,8 +8,7 @@ import java.util.stream.Collectors;
 
 public class ReportingCsvSerializer {
 
-    public static String getHeader()
-    {
+    public static String getHeader() {
         return COLUMNS.stream().map(c -> c.header).collect(Collectors.joining(";"));
     }
 

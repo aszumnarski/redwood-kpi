@@ -1,5 +1,7 @@
 package com.redwood.scheduler.custom.kpi.kpi3.reporting.coverage.model;
 
+import com.redwood.scheduler.custom.kpi.kpi3.config.JobType;
+
 public class CoverageStatus {
 
     private CoverageKey key;
@@ -21,6 +23,8 @@ public class CoverageStatus {
     private String category;
 
     private String reconType;
+
+    private JobType clearingType;
 
     public CoverageStatus() {
     }
@@ -138,6 +142,15 @@ public class CoverageStatus {
                 ", frequency='" + frequency + '\'' +
                 ", category='" + category + '\'' +
                 ", reconType='" + reconType + '\'' +
+                ", clearingType='" + clearingType + '\'' +
                 '}';
+    }
+
+    public JobType getClearingType() {
+        return clearingType;
+    }
+
+    public void setClearingType(JobType clearingType) {
+        this.clearingType = clearingType;
     }
 }

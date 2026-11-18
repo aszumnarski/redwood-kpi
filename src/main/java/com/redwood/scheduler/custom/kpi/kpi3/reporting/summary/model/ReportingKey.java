@@ -50,7 +50,7 @@ public class ReportingKey
         {
             throw new IllegalArgumentException("Invalid ReportingKey: " + key);
         }
-        return new ReportingKey(parts[0],parts[1],parts[2],parts[3]);
+        return new ReportingKey(parts[0],parts[1],parts[3],parts[2]);
     }
 
     @Override
