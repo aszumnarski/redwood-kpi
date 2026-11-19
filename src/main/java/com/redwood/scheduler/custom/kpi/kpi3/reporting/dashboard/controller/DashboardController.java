@@ -6,6 +6,9 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.scripting.variables.ExtensionParameters;
 import com.redwood.scheduler.api.scripting.variables.ExtensionPointHttpServletRequest;
 import com.redwood.scheduler.api.scripting.variables.ExtensionPointHttpServletResponse;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.dashboard.config.ClearingDashboardConfig;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.dashboard.config.ClearingDashboardConfigService;
+import com.redwood.scheduler.custom.kpi.kpi3.reporting.dashboard.config.DocumentTextReader;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.dashboard.model.*;
 import com.redwood.scheduler.custom.kpi.kpi3.reporting.dashboard.provider.*;
 import com.redwood.scheduler.infrastructure.logging.api.Logger;
@@ -27,6 +30,7 @@ public class DashboardController {
         UNKNOWN
     }
 
+    private final DashboardAccessProvider dashboardAccessProvider = new DashboardAccessProvider();
     private final CoverageDashboardProvider coverageDashboardProvider = new CoverageDashboardProvider();
     private final PowerUsersDashboardProvider powerUsersDashboardProvider = new PowerUsersDashboardProvider();
     private final CoverageDetailsProvider coverageDetailsProvider = new CoverageDetailsProvider();
@@ -37,6 +41,7 @@ public class DashboardController {
             SchedulerSession session,
             ExtensionPointHttpServletRequest request,
             ExtensionPointHttpServletResponse response,
+            String userName,
             Logger log) {
 
         try {
@@ -45,11 +50,25 @@ public class DashboardController {
             String path = normalizePath(request.getPathInfo());
 
             if ("GET".equals(method)) {
-                handleGet(session, request, response, path, log);
+                handleGet(session, request, response, path, userName, log);
                 return;
             }
 
             response.setStatus(405);
+
+
+        } catch (SecurityException e) {
+
+            log.error("Security issue", e);
+
+            try {
+                response.setStatus(403);
+                response.setContentType("application/json");
+
+                response.getWriter().println(errorJson(e));
+            } catch (Exception ignored) {
+
+            }
 
         } catch (Exception e) {
 
@@ -57,36 +76,61 @@ public class DashboardController {
 
             try {
                 response.setStatus(500);
-                response.setContentType(
-                        "application/json");
+                response.setContentType("application/json");
 
-                response.getWriter().println(
-                        "{\"error\":\""
-                                + escape(e.getMessage())
-                                + "\"}");
+                response.getWriter().println(errorJson(e));
             } catch (Exception ignored) {
             }
         }
     }
 
-    private void handleGet(SchedulerSession session, ExtensionPointHttpServletRequest request, ExtensionPointHttpServletResponse response, String path, Logger log)
+    private String errorJson(Exception e) {
+        return "{\"error\":\"" + escape(e.getMessage()) + "\"}";
+    }
+
+    private void handleGet(SchedulerSession session, ExtensionPointHttpServletRequest request, ExtensionPointHttpServletResponse response, String path, String userName, Logger log)
             throws Exception {
 
-        switch (resolveGetRoute(path)) {
-            case UI -> handleUi(session, response);
-            case INIT -> handleInit(session,response,log);
+        GetRoute route = resolveGetRoute(path);
+
+        validateAccess(session, userName, route);
+
+        switch (route) {
+            case UI -> handleUi(session, response, log);
+            case INIT -> handleInit(session, response, userName, log);
             case HEALTH -> handleHealth(response);
             case COVERAGE -> handleCoverageDashboard(session, request, response, log);
-            case COVERAGE_DETAILS -> handleCoverageDetails(session,request,response,log);
-            case SUMMARY -> handleSummaryDashboard(session,request,response,log);
+            case COVERAGE_DETAILS -> handleCoverageDetails(session, request, response, log);
+            case SUMMARY -> handleSummaryDashboard(session, request, response, log);
             case DETAILS -> handleDetailsDashboard(session, request, response, log);
             default -> writeBadRequest(response, "Unknown endpoint: " + path);
         }
     }
 
+    private GetRoute resolveGetRoute(String path) {
+
+        return switch (path) {
+            case "/ui" -> GetRoute.UI;
+            case "/init" -> GetRoute.INIT;
+            case "/health" -> GetRoute.HEALTH;
+            case "/coverage/dashboard" -> GetRoute.COVERAGE;
+            case "/coverage/details" -> GetRoute.COVERAGE_DETAILS;
+            case "/summary/dashboard" -> GetRoute.SUMMARY;
+            case "/details/dashboard" -> GetRoute.DETAILS;
+            default -> GetRoute.UNKNOWN;
+        };
+    }
+
+    private void validateAccess(SchedulerSession session, String userName, GetRoute route) {
+
+        if (route == GetRoute.HEALTH || route == GetRoute.UI) return;
+
+        dashboardAccessProvider.validateAccess(session, userName);
+    }
+
     private void handleInit(
             SchedulerSession session,
-            ExtensionPointHttpServletResponse response,
+            ExtensionPointHttpServletResponse response, String userName,
             Logger log) throws Exception {
 
         DashboardInitDto init = dashboardInitProvider.getInit(session, log);
@@ -115,20 +159,6 @@ public class DashboardController {
         response.setContentType("application/json; charset=UTF-8");
 
         MAPPER.writeValue(response.getWriter(), details);
-    }
-
-    private GetRoute resolveGetRoute(String path) {
-
-        return switch (path) {
-            case "/ui" -> GetRoute.UI;
-            case "/init" -> GetRoute.INIT;
-            case "/health" -> GetRoute.HEALTH;
-            case "/coverage/dashboard" -> GetRoute.COVERAGE;
-            case "/coverage/details" -> GetRoute.COVERAGE_DETAILS;
-            case "/summary/dashboard" -> GetRoute.SUMMARY;
-            case "/details/dashboard" -> GetRoute.DETAILS;
-            default -> GetRoute.UNKNOWN;
-        };
     }
 
     private void handleCoverageDashboard(
@@ -203,13 +233,28 @@ public class DashboardController {
 
     private void handleUi(
             SchedulerSession session,
-            ExtensionPointHttpServletResponse response)
+            ExtensionPointHttpServletResponse response, Logger log)
             throws Exception {
 
         response.setStatus(200);
         response.setContentType("text/html; charset=UTF-8");
 
-        response.getWriter().println("<html><body>Coverage Dashboard</body></html>");
+        response.getWriter().println(loadHtml(session));
+    }
+
+    private String loadHtml(SchedulerSession session) throws Exception {
+        ClearingDashboardConfig config = new ClearingDashboardConfigService().load(session);
+
+        String html = DocumentTextReader.readDocument(session, config.getHtml());
+
+        return html.replace("{JS_PATH}", normalizeDocPath(config.getJs()));
+    }
+
+    private String normalizeDocPath(String path) {
+        if (path.startsWith("doc:")) {
+            return "doc/" + path.substring(4);
+        }
+        return path;
     }
 
     private void writeBadRequest(
